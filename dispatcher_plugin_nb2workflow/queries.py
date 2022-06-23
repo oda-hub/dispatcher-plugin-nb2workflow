@@ -1,4 +1,4 @@
-from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput
+from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery
 from cdci_data_analysis.analysis.parameters import Name, Integer, Float, Time, Angle
 from .products import NB2WProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
@@ -6,10 +6,14 @@ from .dataserver_dispatcher import NB2WDataDispatcher
 class NB2WProductQuery(ProductQuery): 
     def __init__(self, name, backend_product_name, backend_param_dict):
         self.backend_product_name = backend_product_name
+        
+        src_query_pars = ['src_name', 'RA', 'DEC', 'T1', 'T2']
         plist = []
-        # FIXME: demo only, advanced correspondance needed
         for pname, pval in backend_param_dict.items():
-            if pval['python_type']['type_object'] == "<class 'str'>":
+            # FIXME: demo only, advanced correspondance needed
+            if pname in src_query_pars:
+                continue
+            elif pval['python_type']['type_object'] == "<class 'str'>":
                 plist.append(Name(value=pval['default_value'], name=pname))
             elif pval['python_type']['type_object'] == "<class 'int'>":
                 plist.append(Integer(value=pval['default_value'], name=pname))
@@ -34,9 +38,10 @@ class NB2WProductQuery(ProductQuery):
         
         
     def get_data_server_query(self, instrument, config=None, **kwargs):
-        # param_dict = {'anal_par_csv': instrument.get_par_by_name('anal_par_csv').value}
-        # TODO: 
         param_dict = {}
+        for param_name in instrument.get_parameters_name_list():
+            param_dict[param_name] = instrument.get_par_by_name(param_name).value
+        
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
                                                 param_dict=param_dict,
@@ -71,3 +76,7 @@ class NB2WProductQuery(ProductQuery):
 
         return query_out
     
+class NB2WInstrumentQuery(BaseQuery):
+    def __init__(self, name):
+        self.input_prod_list_name = None
+        super().__init__(name, [])

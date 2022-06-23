@@ -1,6 +1,6 @@
 from cdci_data_analysis.analysis.instrument import Instrument
 from cdci_data_analysis.analysis.queries import SourceQuery, InstrumentQuery
-from .queries import NB2WProductQuery
+from .queries import NB2WProductQuery, NB2WInstrumentQuery
 from .dataserver_dispatcher import NB2WDataDispatcher
 from . import conf_file
 import yaml
@@ -19,7 +19,7 @@ def factory_factory(instr_name, data_server_url):
         query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(data_server_url)
         return Instrument(instr_name,
                         src_query = SourceQuery('src_query'),
-                        instrumet_query = InstrumentQuery('instr_query'),
+                        instrumet_query = NB2WInstrumentQuery('instr_query'),
                         data_serve_conf_file=conf_file,
                         product_queries_list=query_list,
                         query_dictionary=query_dict,
