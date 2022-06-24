@@ -10,9 +10,11 @@ class NB2WProductQuery(ProductQuery):
         src_query_pars = ['src_name', 'RA', 'DEC', 'T1', 'T2']
         plist = []
         for pname, pval in backend_param_dict.items():
-            # FIXME: demo only, advanced correspondance needed
+            # TODO: find a better way to deal with common parameters and not rely on parameter names
             if pname in src_query_pars:
                 continue
+            
+            # FIXME: demo only, advanced correspondance needed
             elif pval['python_type']['type_object'] == "<class 'str'>":
                 plist.append(Name(value=pval['default_value'], name=pname))
             elif pval['python_type']['type_object'] == "<class 'int'>":
@@ -55,7 +57,7 @@ class NB2WProductQuery(ProductQuery):
             _o_dict = res.json() 
         else:
             _o_dict = res.json()['data']
-        prod_list = [NB2WProduct(_o_dict['output'])]
+        prod_list = NB2WProduct.prod_list_from_output_dict(_o_dict['output'])
         return prod_list
     
     def process_product_method(self, instrument, prod_list, api=False):
@@ -78,5 +80,5 @@ class NB2WProductQuery(ProductQuery):
     
 class NB2WInstrumentQuery(BaseQuery):
     def __init__(self, name):
-        self.input_prod_list_name = None
+        self.input_prod_list_name = None # this is a workaround
         super().__init__(name, [])
