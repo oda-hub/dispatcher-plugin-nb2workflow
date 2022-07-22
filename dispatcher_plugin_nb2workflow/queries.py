@@ -1,29 +1,28 @@
 from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery
-from cdci_data_analysis.analysis.parameters import Name, Integer, Float, Time, Angle
+from cdci_data_analysis.analysis.parameters import Parameter
 from .products import NB2WProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
 
 class NB2WProductQuery(ProductQuery): 
-    def __init__(self, name, backend_product_name, backend_param_dict):
+    def __init__(self, name, backend_product_name, backend_param_dict, backend_output_dict):
         self.backend_product_name = backend_product_name
+        self.backend_output_dict = backend_output_dict
         
-        src_query_pars = ['src_name', 'RA', 'DEC', 'T1', 'T2']
+        std_query_pars_uris = {"http://odahub.io/ontology#PointOfInterestRA": "RA",
+                               "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
+                               "http://odahub.io/ontology#StartTime": "T1",
+                               "http://odahub.io/ontology#EndTime": "T2",
+                               "http://odahub.io/ontology#AstrophysicalObject": "src_name"}
+        self.par_name_substitution = {}
+        
         plist = []
         for pname, pval in backend_param_dict.items():
-            # TODO: find a better way to deal with common parameters and not rely on parameter names
-            if pname in src_query_pars:
-                continue
-            
-            # FIXME: demo only, advanced correspondance needed
-            elif pval['python_type']['type_object'] == "<class 'str'>":
-                plist.append(Name(value=pval['default_value'], name=pname))
-            elif pval['python_type']['type_object'] == "<class 'int'>":
-                plist.append(Integer(value=pval['default_value'], name=pname))
-            elif pval['python_type']['type_object'] == "<class 'float'>":
-                plist.append(Float(value=pval['default_value'], name=pname))    
+            if pval['owl_type'] in std_query_pars_uris.keys():
+                self.par_name_substitution[ std_query_pars_uris[pval['owl_type']] ] = pname
+                # TODO: probably set default values of these parameters from backend
             else:
-                raise NotImplementedError('unknown type of parameter')
-            
+                plist.append(Parameter.from_owl_uri(pval['owl_type'], value=pval['default_value'], name=pname))
+                
         super().__init__(name, parameters_list = plist)
     
     @classmethod
@@ -34,7 +33,8 @@ class NB2WProductQuery(ProductQuery):
         qdict = {}
         for product_name in product_names:
             backend_param_dict = backend_options[product_name]['parameters']
-            qlist.append(cls(f'{product_name}_query', product_name, backend_param_dict))
+            backend_output_dict = backend_options[product_name]['output']
+            qlist.append(cls(f'{product_name}_query', product_name, backend_param_dict, backend_output_dict))
             qdict[product_name] = f'{product_name}_query'
         return qlist, qdict
         
@@ -42,7 +42,7 @@ class NB2WProductQuery(ProductQuery):
     def get_data_server_query(self, instrument, config=None, **kwargs):
         param_dict = {}
         for param_name in instrument.get_parameters_name_list():
-            param_dict[param_name] = instrument.get_par_by_name(param_name).value
+            param_dict[self.par_name_substitution.get(param_name, param_name)] = instrument.get_par_by_name(param_name).value
         
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
@@ -57,16 +57,17 @@ class NB2WProductQuery(ProductQuery):
             _o_dict = res.json() 
         else:
             _o_dict = res.json()['data']
-        prod_list = NB2WProduct.prod_list_from_output_dict(_o_dict['output'])
+        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output']) 
         return prod_list
     
     def process_product_method(self, instrument, prod_list, api=False):
         query_out = QueryOutput()
-        image_prod  = prod_list.prod_list[0]
-
+        
         if api is True:
-            raise NotImplementedError
+            for product in prod_list.prod_list:
+                pass # TODO: 
         else:
+            raise NotImplementedError
             plot_dict = {'image': image_prod.get_plot()}
             #image_prod.write() 
 
