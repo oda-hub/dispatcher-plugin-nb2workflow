@@ -1,7 +1,4 @@
 instruments:
-  fink:
+  example:
     data_server_url: http://localhost:9393
-    dummy_cache: required-but-not-used
-  nb2w-dup:
-    data_server_url: http://localhost:9494
     dummy_cache: required-but-not-used

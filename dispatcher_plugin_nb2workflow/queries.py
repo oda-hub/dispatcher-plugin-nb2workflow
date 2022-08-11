@@ -64,8 +64,11 @@ class NB2WProductQuery(ProductQuery):
         query_out = QueryOutput()
         
         if api is True:
+            np_dp_list = []
             for product in prod_list.prod_list:
-                pass # TODO: 
+                np_dp_list.append(product.dispatcher_data_prod.data)
+            query_out.prod_dictionary['numpy_data_product_list'] = np_dp_list
+            query_out.prod_dictionary['binary_data_product_list'] = []
         else:
             raise NotImplementedError
             plot_dict = {'image': image_prod.get_plot()}
