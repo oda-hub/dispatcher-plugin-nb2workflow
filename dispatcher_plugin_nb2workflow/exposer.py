@@ -3,13 +3,60 @@ from cdci_data_analysis.analysis.queries import SourceQuery, InstrumentQuery
 from .queries import NB2WProductQuery, NB2WInstrumentQuery
 from .dataserver_dispatcher import NB2WDataDispatcher
 from . import conf_file
+import json
 import yaml
+import requests
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+def kg_select(t):
+    #TODO: take statically update location instead
+    r = requests.get("https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query",
+                params={"query": f"""
+                    SELECT * WHERE {{
+                        {t}
+                    }} LIMIT 100
+                """})
+                
+    if r.status_code != 200:
+        raise RuntimeError(f'{r}: {r.text}')
+
+    logger.warning(json.dumps(r.json()['results']['bindings'], indent=4))
+
+    return r.json()['results']['bindings']
+
+
 
 def read_conf_file(conf_file):
     cfg_dict = None
     if conf_file is not None:
         with open(conf_file, 'r') as ymlfile:
             cfg_dict = yaml.load(ymlfile, Loader=yaml.SafeLoader)
+
+    #TODO: relocate
+    cfg_dict['instruments'] = {}
+
+    
+    for r in kg_select('''
+            ?w a <http://odahub.io/ontology#WorkflowService>;
+               <http://odahub.io/ontology#deployment_name> ?deployment_name;
+               <http://odahub.io/ontology#service_name> ?service_name .               
+        '''): 
+        logger.info('found instrument service record %s', r)
+        cfg_dict['instruments'][r['service_name']['value']] = {
+            "data_server_url": f"http://{r['deployment_name']['value']}:8000",
+            "dummy_cache": ""
+        }
+    
+    # for r in odakb.sparql.construct('?w a oda:WorkflowService; ?b ?c', jsonld=True): 
+    #     logger.info('found instrument service record %s', r)
+    #     cfg_dict['instruments'][r["http://odahub.io/ontology#service_name"][0]['@value']] = {
+    #         "data_server_url": r["http://odahub.io/ontology#deployment_name"][0]['@value'],
+    #         "dummy_cache": ""
+    #     }
+    
     return cfg_dict
 
 config_dict = read_conf_file(conf_file)
