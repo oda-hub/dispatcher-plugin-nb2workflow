@@ -1,5 +1,9 @@
+import logging
+
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct
 from oda_api.data_products import NumpyDataProduct
+
+logger = logging.getLogger(__name__)
 
 class NB2WProduct:
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct):
@@ -25,7 +29,12 @@ class NB2WProduct:
         prod_list = []
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
-            prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key]) )
+
+            try:                        
+                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key]) )
+            except Exception as e:
+                logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
+
         return prod_list
 
 class NB2WLightCurveList(NB2WProduct):
