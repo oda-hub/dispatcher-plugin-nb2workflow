@@ -2,11 +2,17 @@ from cdci_data_analysis.analysis.queries import QueryOutput
 from cdci_data_analysis.configurer import DataServerConf
 import requests
 import time 
+from . import exposer
 
 class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
         if config is None:
-            config = DataServerConf.from_conf_dict(instrument.data_server_conf_dict)
+            try:
+                config = DataServerConf.from_conf_dict(instrument.data_server_conf_dict)
+            except:
+                #this happens if the instrument is not found in the instrument config, which is always read from a static file
+                config = DataServerConf.from_conf_dict(exposer.read_conf_file()['instruments'][instrument.name])
+            
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict

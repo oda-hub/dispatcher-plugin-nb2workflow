@@ -29,10 +29,9 @@ def kg_select(t):
 
 
 
-def read_conf_file(conf_file):
+def read_conf_file(conf_file=None):
     if conf_file is None:
-        return {}
-        raise RuntimeError('unable to read config file!')
+        cfg_dict = {'instruments': {}}
     else:
         with open(conf_file, 'r') as ymlfile:
             cfg_dict = yaml.load(ymlfile, Loader=yaml.SafeLoader)
