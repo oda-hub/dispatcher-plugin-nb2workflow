@@ -15,6 +15,7 @@ def find_config():
         if conf_file is not None and os.path.exists(conf_file):
             return conf_file
 
+    return None
     raise RuntimeError("no nb2w config found tried: "+", ".join(config_file_resolution_order))
 
 conf_file=find_config()
