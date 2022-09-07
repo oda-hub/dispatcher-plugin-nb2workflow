@@ -1,33 +1,59 @@
-from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery
-from cdci_data_analysis.analysis.parameters import Parameter
+from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, SourceQuery
+from cdci_data_analysis.analysis.parameters import Parameter, Name
 from .products import NB2WProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
+
+def construct_parameter_lists(backend_param_dict):
+    std_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
+                            "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
+                            "http://odahub.io/ontology#StartTime": "T1",
+                            "http://odahub.io/ontology#EndTime": "T2",
+                            "http://odahub.io/ontology#TimeFormat": "t_format",
+                            "http://odahub.io/ontology#AstrophysicalObject": "src_name"}
+    par_name_substitution = {}
+    
+    plist = []
+    source_plist = []
+    for pname, pval in backend_param_dict.items():
+        if pval['owl_type'] in std_query_pars_uris.keys():
+            default_pname = std_query_pars_uris[pval['owl_type']]
+            par_name_substitution[ default_pname ] = pname
+            source_plist.append(Parameter.from_owl_uri(pval['owl_type'], value=pval['default_value'], name=default_pname))
+        else:
+            plist.append(Parameter.from_owl_uri(pval['owl_type'], value=pval['default_value'], name=pname))
+    
+    return {'source_plist': source_plist,
+            'prod_plist': plist,
+            'par_name_substitution': par_name_substitution}
+
+class NB2WSourceQuery(BaseQuery):
+    @classmethod
+    def from_backend_options(cls, backend_options):
+        product_names = backend_options.keys()
+        # Note that different backend products could contain different sets of the source query parameters. 
+        # So we squash them into one list without duplicates
+        parameters_dict = {}
+        for product_name in product_names:
+            backend_param_dict = backend_options[product_name]['parameters']
+            prod_source_plist = construct_parameter_lists(backend_param_dict)['source_plist']
+            for par in prod_source_plist:
+                parameters_dict[par.name] = par
+        parameters_list = list(parameters_dict.values())
+        parameters_list.append(Name(name_format='str', name='token', value=None))
+        # TODO: do we need to join coordinates and times as in dispatcher's SuorceQuery ?
+        return cls('src_query', parameters_list)
 
 class NB2WProductQuery(ProductQuery): 
     def __init__(self, name, backend_product_name, backend_param_dict, backend_output_dict):
         self.backend_product_name = backend_product_name
         self.backend_output_dict = backend_output_dict
-        
-        std_query_pars_uris = {"http://odahub.io/ontology#PointOfInterestRA": "RA",
-                               "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
-                               "http://odahub.io/ontology#StartTime": "T1",
-                               "http://odahub.io/ontology#EndTime": "T2",
-                               "http://odahub.io/ontology#AstrophysicalObject": "src_name"}
-        self.par_name_substitution = {}
-        
-        plist = []
-        for pname, pval in backend_param_dict.items():
-            if pval['owl_type'] in std_query_pars_uris.keys():
-                self.par_name_substitution[ std_query_pars_uris[pval['owl_type']] ] = pname
-                # TODO: probably set default values of these parameters from backend
-            else:
-                plist.append(Parameter.from_owl_uri(pval['owl_type'], value=pval['default_value'], name=pname))
-                
+        parameter_lists = construct_parameter_lists(backend_param_dict)
+        self.par_name_substitution = parameter_lists['par_name_substitution']
+        plist = parameter_lists['prod_plist']
         super().__init__(name, parameters_list = plist)
     
     @classmethod
-    def query_list_and_dict_factory(cls, data_server_url):
-        backend_options = NB2WDataDispatcher.query_backend_options(data_server_url)
+    def query_list_and_dict_factory(cls, backend_options):
         product_names = backend_options.keys()
         qlist = []
         qdict = {}
