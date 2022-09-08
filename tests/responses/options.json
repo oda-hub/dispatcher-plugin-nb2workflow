@@ -1,0 +1,47 @@
+{
+  "lightcurve": {
+    "output": {
+      "result": {
+        "comment": " http://odahub.io/ontology#LightCurve",
+        "name": "result",
+        "owl_type": "http://odahub.io/ontology#LightCurve",
+        "python_type": {
+          "type_object": "<class 'str'>"
+        },
+        "value": " lc.encode(use_pickle=False) "
+      }
+    },
+    "parameters": {
+      "end_time": {
+        "comment": " http://odahub.io/ontology#EndTime",
+        "default_value": "2021-06-30T15:59:37.0",
+        "name": "end_time",
+        "owl_type": "http://odahub.io/ontology#EndTime",
+        "python_type": {
+          "type_object": "<class 'str'>"
+        },
+        "value": "2021-06-30T15:59:37.0"
+      },
+      "seed": {
+        "comment": " example of additional parameter; also for reproducibility ",
+        "default_value": 60,
+        "name": "seed",
+        "owl_type": "http://www.w3.org/2001/XMLSchema#int",
+        "python_type": {
+          "type_object": "<class 'int'>"
+        },
+        "value": 60
+      },
+      "start_time": {
+        "comment": " http://odahub.io/ontology#StartTime",
+        "default_value": "2021-06-25T05:59:37.0",
+        "name": "start_time",
+        "owl_type": "http://odahub.io/ontology#StartTime",
+        "python_type": {
+          "type_object": "<class 'str'>"
+        },
+        "value": "2021-06-25T05:59:37.0"
+      }
+    }
+  }
+}
