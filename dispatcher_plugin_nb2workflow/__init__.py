@@ -1,4 +1,6 @@
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 __author__ = "Denys Savchenko"
 
@@ -15,6 +17,7 @@ def find_config():
         if conf_file is not None and os.path.exists(conf_file):
             return conf_file
 
-    raise RuntimeError("no nb2w config found tried: "+", ".join(config_file_resolution_order))
+    logger.info("no nb2w config found tried: "+", ".join(config_file_resolution_order))
+    return None
 
 conf_file=find_config()
