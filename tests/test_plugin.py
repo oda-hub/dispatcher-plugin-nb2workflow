@@ -74,7 +74,7 @@ def test_instrument_available(dispatcher_plugin_config_env, dispatcher_live_fixt
     assert c.status_code == 200
     assert 'example0' in jdata
 
-def test_instrument_parameters(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
+def test_instrument_parameters(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend, caplog):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
        
@@ -86,6 +86,8 @@ def test_instrument_parameters(dispatcher_plugin_config_env, dispatcher_live_fix
     logger.info(jdata)
     assert c.status_code == 200
     assert sorted(jdata) == sorted(expected_parameters)
+    assert "will be discarded for the instantiation" not in caplog.text
+    assert "Possibly a programming error" not in caplog.text
 
 def test_instrument_products(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
