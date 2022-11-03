@@ -1,29 +1,8 @@
-import pytest
 import json
 import logging
 import requests
-import os
-#from dispatcher_plugin_nb2workflow import conf_file
-
 
 logger = logging.getLogger(__name__)
-
-config_one_instrument = """    
-instruments:
-  example0:
-    data_server_url: http://localhost:9393
-    dummy_cache: ""
-"""
-
-config_two_instruments = """    
-instruments:
-  example0:
-    data_server_url: http://localhost:9393
-    dummy_cache: ""
-  example1:
-    data_server_url: http://localhost:9494
-    dummy_cache: ""
-"""
 
 src_arguments = [
   "src_name",
@@ -35,36 +14,23 @@ src_arguments = [
   "token",
 ]
 expected_arguments = src_arguments + ['seed']
+
+config_two_instruments = """    
+instruments:
+  example0:
+    data_server_url: http://localhost:9393
+    dummy_cache: ""
+  example1:
+    data_server_url: http://localhost:9494
+    dummy_cache: ""
+"""
     
-@pytest.fixture
-def conf_file(tmp_path):
-    d = tmp_path
-    d.mkdir(exist_ok=True)
-    fn = d / 'plugin_conf.yml'
-    fn.write_text(config_one_instrument)
-    yield str(fn.resolve())
-
-@pytest.fixture
-def dispatcher_plugin_config_env(conf_file, monkeypatch):
-    monkeypatch.setenv('CDCI_NB2W_PLUGIN_CONF_FILE', conf_file)
-
-@pytest.fixture
-def mock_backend(httpserver):
-    with open('tests/responses/options.json', 'r') as fd:
-        respjson = json.loads(fd.read())
-    with open('tests/responses/lightcurve.json', 'r') as fd:
-        runjson = json.loads(fd.read())
-        
-    httpserver.expect_request('/').respond_with_data('')    
-    httpserver.expect_request(f'/api/v1.0/options').respond_with_json(respjson)
-    httpserver.expect_request(f'/api/v1.0/get/lightcurve').respond_with_json(runjson)
-
 def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
 
     assert 'dispatcher_plugin_nb2workflow' in  importer.cdci_plugins_dict.keys()
     
-def test_instrument_available(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
+def test_instrument_available(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
    
@@ -77,7 +43,7 @@ def test_instrument_available(dispatcher_plugin_config_env, dispatcher_live_fixt
     assert c.status_code == 200
     assert 'example0' in jdata
 
-def test_instrument_parameters(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend, caplog):
+def test_instrument_parameters(dispatcher_live_fixture, caplog, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
        
@@ -92,7 +58,7 @@ def test_instrument_parameters(dispatcher_plugin_config_env, dispatcher_live_fix
     assert "will be discarded for the instantiation" not in caplog.text
     assert "Possibly a programming error" not in caplog.text
 
-def test_instrument_products(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
+def test_instrument_products(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
        
@@ -108,7 +74,7 @@ def test_instrument_products(dispatcher_plugin_config_env, dispatcher_live_fixtu
             prod_dict = elem['prod_dict']
     assert prod_dict == {'lightcurve': 'lightcurve_query'}
 
-def test_instrument_backend_unavailable(dispatcher_plugin_config_env, dispatcher_live_fixture):
+def test_instrument_backend_unavailable(dispatcher_live_fixture):
     # current behaviour is to have instrument with no products, could be changed in the future
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
@@ -125,7 +91,7 @@ def test_instrument_backend_unavailable(dispatcher_plugin_config_env, dispatcher
             prod_dict = elem['prod_dict']
     assert prod_dict == {}
 
-def test_instrument_added(conf_file, dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
+def test_instrument_added(conf_file, dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
     
@@ -153,7 +119,7 @@ def test_instrument_added(conf_file, dispatcher_plugin_config_env, dispatcher_li
     assert 'example0' in jdata
     assert 'example1' in jdata    
     
-def test_pass_comment(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
+def test_pass_comment(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
        
