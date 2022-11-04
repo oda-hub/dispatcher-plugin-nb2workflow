@@ -8,7 +8,6 @@ def construct_parameter_lists(backend_param_dict):
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
                             "http://odahub.io/ontology#StartTime": "T1",
                             "http://odahub.io/ontology#EndTime": "T2",
-                            "http://odahub.io/ontology#TimeFormat": "t_format",
                             "http://odahub.io/ontology#AstrophysicalObject": "src_name"}
     par_name_substitution = {}
     
@@ -18,9 +17,15 @@ def construct_parameter_lists(backend_param_dict):
         if pval['owl_type'] in std_query_pars_uris.keys():
             default_pname = std_query_pars_uris[pval['owl_type']]
             par_name_substitution[ default_pname ] = pname
-            source_plist.append(Parameter.from_owl_uri(pval['owl_type'], value=pval['default_value'], name=default_pname))
+            source_plist.append(Parameter.from_owl_uri(pval['owl_type'], 
+                                                       value=pval['default_value'], 
+                                                       name=default_pname,
+                                                       Time_format_name='T_format'))
         else:
-            plist.append(Parameter.from_owl_uri(pval['owl_type'], value=pval['default_value'], name=pname))
+            plist.append(Parameter.from_owl_uri(pval['owl_type'], 
+                                                value=pval['default_value'], 
+                                                name=pname,
+                                                Time_format_name='T_format'))
     
     return {'source_plist': source_plist,
             'prod_plist': plist,
@@ -40,7 +45,6 @@ class NB2WSourceQuery(BaseQuery):
                 parameters_dict[par.name] = par
         parameters_list = list(parameters_dict.values())
         parameters_list.append(Name(name_format='str', name='token', value=None))
-        # TODO: do we need to join coordinates and times as in dispatcher's SuorceQuery ?
         return cls('src_query', parameters_list)
 
 class NB2WProductQuery(ProductQuery): 
