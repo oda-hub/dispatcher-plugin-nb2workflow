@@ -26,8 +26,8 @@ class NB2WProductQuery(ProductQuery):
         super().__init__(name, parameters_list = plist)
     
     @classmethod
-    def query_list_and_dict_factory(cls, data_server_url):
-        backend_options = NB2WDataDispatcher.query_backend_options(data_server_url)
+    def query_list_and_dict_factory(cls, instrument):
+        backend_options = NB2WDataDispatcher(instrument=instrument).query_backend_options()
         product_names = backend_options.keys()
         qlist = []
         qdict = {}
