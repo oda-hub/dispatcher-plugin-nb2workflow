@@ -1,6 +1,6 @@
 from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery
 from cdci_data_analysis.analysis.parameters import Parameter
-from .products import NB2WProduct
+from .products import NB2WProduct, NB2WAstropyTableProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
 
 class NB2WProductQuery(ProductQuery): 
@@ -64,10 +64,14 @@ class NB2WProductQuery(ProductQuery):
         query_out = QueryOutput()
         
         if api is True:
-            np_dp_list = []
+            np_dp_list, bin_dp_list, tab_dp_list = [], [], []
             for product in prod_list.prod_list:
-                np_dp_list.append(product.dispatcher_data_prod.data)
+                if isinstance(product, NB2WAstropyTableProduct):
+                    tab_dp_list.append(product.dispatcher_data_prod.table_data)
+                else: # NB2WProduct contains NumpyDataProd by default
+                    np_dp_list.append(product.dispatcher_data_prod.data)
             query_out.prod_dictionary['numpy_data_product_list'] = np_dp_list
+            query_out.prod_dictionary['astropy_table_product_ascii_list'] = tab_dp_list
             query_out.prod_dictionary['binary_data_product_list'] = []
         else:
             raise NotImplementedError
