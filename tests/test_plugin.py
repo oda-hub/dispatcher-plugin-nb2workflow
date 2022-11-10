@@ -31,7 +31,7 @@ src_arguments = [
   "T_format",
   "token",
 ]
-expected_arguments = src_arguments + ['seed']
+expected_arguments = src_arguments + ['seed', 'some_param']
     
 @pytest.fixture
 def conf_file(tmp_path):
@@ -84,7 +84,7 @@ def test_instrument_parameters(dispatcher_plugin_config_env, dispatcher_live_fix
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
-    assert sorted(jdata) == sorted(expected_arguments) or sorted(jdata) == sorted(expected_arguments[:5]+expected_arguments[6:]) # TODO: leave one option
+    assert sorted(jdata) == sorted(expected_arguments)
     assert "will be discarded for the instantiation" not in caplog.text
     assert "Possibly a programming error" not in caplog.text
 
