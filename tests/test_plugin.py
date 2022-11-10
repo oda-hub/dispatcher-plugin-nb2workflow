@@ -2,9 +2,6 @@ import pytest
 import json
 import logging
 import requests
-import os
-#from dispatcher_plugin_nb2workflow import conf_file
-
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +49,11 @@ def dispatcher_plugin_config_env(conf_file, monkeypatch):
 def mock_backend(httpserver):
     with open('tests/responses/options.json', 'r') as fd:
         respjson = json.loads(fd.read())
-        
+    with open('tests/responses/table.json', 'r') as fd:
+        tab_resp_json = json.loads(fd.read())
     httpserver.expect_request('/').respond_with_data('')    
     httpserver.expect_request(f'/api/v1.0/options').respond_with_json(respjson)
-    
+    httpserver.expect_request('/api/v1.0/get/table').respond_with_json(tab_resp_json)
 
 def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
@@ -151,3 +149,24 @@ def test_instrument_added(conf_file, dispatcher_plugin_config_env, dispatcher_li
     assert 'example0' in jdata
     assert 'example1' in jdata    
     
+def test_instrument_products(dispatcher_plugin_config_env, dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+    
+    with open('tests/responses/table.json', 'r') as fd:
+        tab_resp_json = json.loads(fd.read())
+        ascii_rep = tab_resp_json['output']['output']['ascii']
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': 'table',
+                              'api': 'True'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert jdata['products']['astropy_table_product_ascii_list'][0]['ascii'] == ascii_rep
+

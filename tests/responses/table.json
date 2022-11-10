@@ -1,0 +1,12 @@
+{
+    "exceptions": [],
+    "jobdir": "/tmp/nb2w-aqkvl461",
+    "output": {
+        "output": {
+            "ascii": "# %ECSV 1.0\n# ---\n# datatype:\n# - {name: number, datatype: float64}\n# - {name: value, unit: keV, datatype: float64}\n# schema: astropy-2.0\nnumber value\n0.0 60.0\n1.0 60.0\n2.0 60.0\n3.0 60.0\n4.0 60.0\n5.0 60.0\n6.0 60.0\n7.0 60.0\n8.0 60.0\n9.0 60.0\n",
+            "binary": null,
+            "meta_data": "{}",
+            "name": "astropy table"
+        }
+    }
+}
