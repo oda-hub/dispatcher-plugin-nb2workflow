@@ -4,17 +4,6 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-src_arguments = [
-  "src_name",
-  "RA",
-  "DEC",
-  "T1",
-  "T2",
-  "T_format",
-  "token",
-]
-expected_arguments = src_arguments + ['seed']
-
 config_two_instruments = """    
 instruments:
   example0:
@@ -24,6 +13,12 @@ instruments:
     data_server_url: http://localhost:9494
     dummy_cache: ""
 """
+
+expected_arguments = ["T1",
+                      "T2",
+                      "T_format",
+                      "token",
+                      "seed"]
     
 def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
@@ -54,9 +49,24 @@ def test_instrument_parameters(dispatcher_live_fixture, caplog, mock_backend):
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
-    assert sorted(jdata) == sorted(expected_arguments) or sorted(jdata) == sorted(expected_arguments[:5]+expected_arguments[6:]) # TODO: leave one option
+    assert sorted(jdata) == sorted(expected_arguments)
     assert "will be discarded for the instantiation" not in caplog.text
     assert "Possibly a programming error" not in caplog.text
+    
+def test_default_src_par_value(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+       
+    c = requests.get(server + "/meta-data",
+                    params = {'instrument': 'example0'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    src_query_descr = json.loads([x for x in jdata[0] if "src_query" in x][0])
+    T1_value = [x for x in src_query_descr if x.get('name') == 'T1'][0]['value']
+    assert T1_value == '2021-06-25T05:59:37.000'
 
 def test_instrument_products(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
