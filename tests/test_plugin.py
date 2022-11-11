@@ -4,7 +4,6 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-
 config_two_instruments = """    
 instruments:
   example0:
