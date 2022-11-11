@@ -4,7 +4,7 @@ from .products import NB2WProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
 
 def construct_parameter_lists(backend_param_dict):
-    std_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
+    src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
                             "http://odahub.io/ontology#StartTime": "T1",
                             "http://odahub.io/ontology#EndTime": "T2",
@@ -14,8 +14,8 @@ def construct_parameter_lists(backend_param_dict):
     plist = []
     source_plist = []
     for pname, pval in backend_param_dict.items():
-        if pval['owl_type'] in std_query_pars_uris.keys():
-            default_pname = std_query_pars_uris[pval['owl_type']]
+        if pval['owl_type'] in src_query_pars_uris.keys():
+            default_pname = src_query_pars_uris[pval['owl_type']]
             par_name_substitution[ default_pname ] = pname
             source_plist.append(Parameter.from_owl_uri(pval['owl_type'], 
                                                        value=pval['default_value'], 

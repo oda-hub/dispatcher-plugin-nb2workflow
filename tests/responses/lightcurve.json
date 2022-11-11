@@ -1,0 +1,31 @@
+{
+    "exceptions": [],
+    "jobdir": "/tmp/nb2w-ylp5ovnm",
+    "output": {
+        "comment": "TEST COMMENT",
+        "result": {
+            "data_unit_list": [
+                {
+                    "binarys": "gASViAAAAAAAAACMFW51bXB5LmNvcmUubXVsdGlhcnJheZSMDF9yZWNvbnN0cnVjdJSTlIwFbnVtcHmUjAduZGFycmF5lJOUSwCFlEMBYpSHlFKUKEsBSwCFlGgDjAVkdHlwZZSTlIwCZjiUiYiHlFKUKEsDjAE8lE5OTkr/////Sv////9LAHSUYolDAJR0lGIu",
+                    "data": null,
+                    "dt": "float64",
+                    "hdu_type": "primary",
+                    "header": {},
+                    "meta_data": {},
+                    "name": "PRIMARY"
+                },
+                {
+                    "binarys": "gASVSgIAAAAAAACMFW51bXB5LmNvcmUubXVsdGlhcnJheZSMDF9yZWNvbnN0cnVjdJSTlIwFbnVtcHmUjAduZGFycmF5lJOUSwCFlEMBYpSHlFKUKEsBSw+FlGgDjAVkdHlwZZSTlGgDjAZyZWNvcmSUk5SJiIeUUpQoSwOMAXyUTowEVElNRZSMA01BR5SMBUVSUk9SlIeUfZQoaBJoDIwCZjiUiYiHlFKUKEsDjAE8lE5OTkr/////Sv////9LAHSUYksAhpRoE2gZSwiGlGgUaBlLEIaUdUsYSwFLEHSUYolCaAEAAPq60f3H/+xA45OxEQyaMkAAGAI6vZ01P1vTV1/U/+xA8Z+uXLdfMkC4KvrsBFDLv73r3cDg/+xAqmwoM3ilMkBOx6cP8OHRvx4EZCLt/+xAvm2vIN1UM0AAk1ZTtRVhP4Ac6oP5/+xAP+Yv/0kiM0BQeyxPf2rBP+E0cOUFAO1ACfJh8efLMkAYPwqo3F3BP0NN9kYSAO1A45X7q0LCMkCm0LAsL9rav6RlfKgeAO1AmBRt8WoFMkAAp3+k19i0PwZ+AgorAO1AREP5KDpXMkB+rBOUTbXVP2eWiGs3AO1Afzp3ai0/MkAMhhO/YH7Kv8muDs1DAO1AebqLa4JiM0Bg3Zm/PTrfPyrHlC5QAO1AiNjhzba/M0AATzOPbCmoP4zfGpBcAO1AmGN+Sb+sMkAYA+IVlGbdP+33oPFoAO1AgNCZnSP8M0BkoSpaL2XCv08QJ1N1AO1AWkJcOFlDMkAgJoaFKaSRP5R0lGIu",
+                    "data": null,
+                    "dt": "(numpy.record, [('TIME', '<f8'), ('MAG', '<f8'), ('ERROR', '<f8')])",
+                    "hdu_type": "bintable",
+                    "header": {},
+                    "meta_data": {},
+                    "name": "LIGHTCURVE"
+                }
+            ],
+            "meta_data": "{}",
+            "name": "lightcurve"
+        }
+    }
+}
