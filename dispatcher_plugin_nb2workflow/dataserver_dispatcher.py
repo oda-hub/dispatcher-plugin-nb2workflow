@@ -6,20 +6,21 @@ from . import exposer
 
 class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
+        iname = instrument if isinstance(instrument, str) else instrument.name
         if config is None:
             try:
-                config = DataServerConf.from_conf_dict(instrument.data_server_conf_dict)
+                config = DataServerConf.from_conf_dict(exposer.config_dict['instruments'][iname])
             except:
                 #this happens if the instrument is not found in the instrument config, which is always read from a static file
-                config = DataServerConf.from_conf_dict(exposer.read_conf_file()['instruments'][instrument.name])
+                config = DataServerConf.from_conf_dict(exposer.read_conf_file()['instruments'][iname])
             
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict
-        
-    @staticmethod    
-    def query_backend_options(data_server_url):
-        url = data_server_url.strip('/') + '/api/v1.0/options'
+        self.backend_options = self.query_backend_options()
+            
+    def query_backend_options(self):
+        url = self.data_server_url.strip('/') + '/api/v1.0/options'
         try:
             res = requests.get("%s" % (url), params=None)
         except:
@@ -32,6 +33,14 @@ class NB2WDataDispatcher:
             # TODO: consecutive requests if failed
         return options_dict
         
+    def get_backend_comment(self, product):
+        comment_uri = 'http://odahub.io/ontology#WorkflowResultComment'
+        if self.backend_options.get(product):
+            for field, desc in self.backend_options[product].get('output', {}).items():
+                if desc.get('owl_type') == comment_uri:
+                    return field
+        return None
+            
         
     def test_communication(self, max_trial=10, sleep_s=1, logger=None):
         print('--> start test connection')
@@ -107,7 +116,15 @@ class NB2WDataDispatcher:
                 query_out.set_failed('Processing failed', 
                                      message=except_message)
                 raise RuntimeError(f'Processing failed. {except_message}')
-            query_out.set_done(message=message, debug_message=str(debug_message),job_status='done')
+            comment_name = self.get_backend_comment(task.strip('/'))
+            comment_value = None
+            if comment_name:
+                if 'data' in res.json().keys(): #async
+                    comment_value = res.json()['data']['output'][comment_name]
+                else:
+                    comment_value = res.json()['output'][comment_name]
+        
+            query_out.set_done(message=message, debug_message=str(debug_message),job_status='done', comment=comment_value)
         elif res.status_code == 201:
             if res.json()['workflow_status'] == 'submitted':
                 query_out.set_status(0, message=message, debug_message=str(debug_message),job_status='submitted')
