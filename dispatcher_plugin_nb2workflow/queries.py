@@ -1,6 +1,6 @@
 from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, SourceQuery
 from cdci_data_analysis.analysis.parameters import Parameter, Name
-from .products import NB2WProduct, NB2WAstropyTableProduct
+from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WBinaryImageProduct, NB2WTextProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
 
 def construct_parameter_lists(backend_param_dict):
@@ -94,15 +94,23 @@ class NB2WProductQuery(ProductQuery):
         query_out = QueryOutput()
         
         if api is True:
-            np_dp_list, bin_dp_list, tab_dp_list = [], [], []
+            np_dp_list, bin_dp_list, tab_dp_list, bin_im_dp_list, text_dp_list = [], [], [], [], []
             for product in prod_list.prod_list:
                 if isinstance(product, NB2WAstropyTableProduct):
                     tab_dp_list.append(product.dispatcher_data_prod.table_data)
+                elif isinstance(product, NB2WBinaryProduct):
+                    bin_dp_list.append(product.dispatcher_data_prod)
+                elif isinstance(product, NB2WBinaryImageProduct):
+                    bin_im_dp_list.append(product.dispatcher_data_prod.encode()) # TODO: encode will go to the CustomJSONEncoder after refactoring
+                elif isinstance(product, NB2WTextProduct):
+                    text_dp_list.append(product.dispatcher_data_prod)
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
             query_out.prod_dictionary['numpy_data_product_list'] = np_dp_list
             query_out.prod_dictionary['astropy_table_product_ascii_list'] = tab_dp_list
-            query_out.prod_dictionary['binary_data_product_list'] = []
+            query_out.prod_dictionary['binary_data_product_list'] = bin_dp_list
+            query_out.prod_dictionary['binary_image_product_list'] = bin_im_dp_list
+            query_out.prod_dictionary['text_product_list'] = text_dp_list
         else:
             raise NotImplementedError
             plot_dict = {'image': image_prod.get_plot()}

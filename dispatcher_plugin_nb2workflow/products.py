@@ -1,7 +1,7 @@
 import logging
 
-from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct
-from oda_api.data_products import NumpyDataProduct, ODAAstropyTable
+from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct
+from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, BinaryImageProduct
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,35 @@ class NB2WProduct:
 
         return prod_list
 
+class NB2WBinaryProduct(NB2WProduct):
+    type_key = 'http://odahub.io/ontology#ODABinaryProduct'
+    
+    def __init__(self, encoded_data):
+        # only need to decode if we want to return file for frontend 
+        # TODO: where do we write?
+        # bin_data = BinaryData().decode(encoded_data)
+        # with open('binary_file_name', 'wb') as fd:
+        #     fd.write(bin_data)
+        self.dispatcher_data_prod = encoded_data
+
+class NB2WTextProduct(NB2WProduct):
+    type_key = 'http://odahub.io/ontology#ODATextProduct'
+    
+    def __init__(self, text_data):
+        if isinstance(text_data, str):
+            self.dispatcher_data_prod = text_data
+        else:
+            raise ValueError(f'This is not a string: {text_data}')
+        
+
+class NB2WBinaryImageProduct(NB2WProduct):
+    type_key = 'http://odahub.io/ontology#ODABinaryImage'
+    
+    def __init__(self, encoded_data):
+        # NOTE: no dispatcher data product class here. (As well as in binary/text data)
+        # Currently not needed but may be usefult later to generate fromtend representation etc.
+        self.dispatcher_data_prod = BinaryImageProduct.decode(encoded_data)
+
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
@@ -87,3 +116,6 @@ class NB2WSpectrumProduct(NB2WProduct):
     
 class NB2WImageProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Image'
+    
+    def __init__(self, encoded_data):
+        super().__init__(encoded_data, data_product_type = ImageProduct)

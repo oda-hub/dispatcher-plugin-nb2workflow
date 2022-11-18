@@ -28,11 +28,17 @@ def mock_backend(httpserver):
         runjson = json.loads(fd.read())
     with open('tests/responses/table.json', 'r') as fd:
         table_json = json.loads(fd.read())
+    with open('tests/responses/ascii_binary.json', 'r') as fd:
+        bin_json = json.loads(fd.read())
+    with open('tests/responses/image.json', 'r') as fd:
+        image_json = json.loads(fd.read())
         
     httpserver.expect_request('/').respond_with_data('')    
     httpserver.expect_request(f'/api/v1.0/options').respond_with_json(respjson)
     httpserver.expect_request(f'/api/v1.0/get/lightcurve').respond_with_json(runjson)
     httpserver.expect_request(f'/api/v1.0/get/table').respond_with_json(table_json)
+    httpserver.expect_request(f'/api/v1.0/get/ascii_binary').respond_with_json(bin_json)
+    httpserver.expect_request(f'/api/v1.0/get/image').respond_with_json(image_json)
 
 @pytest.fixture(scope='session')
 def conf_file(tmp_path_factory):
