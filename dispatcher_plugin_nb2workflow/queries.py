@@ -101,7 +101,7 @@ class NB2WProductQuery(ProductQuery):
                 elif isinstance(product, NB2WBinaryProduct):
                     bin_dp_list.append(product.dispatcher_data_prod)
                 elif isinstance(product, NB2WBinaryImageProduct):
-                    bin_im_dp_list.append(product.dispatcher_data_prod.encode()) # TODO: encode will go to the CustomJSONEncoder after refactoring
+                    bin_im_dp_list.append(product.dispatcher_data_prod) 
                 elif isinstance(product, NB2WTextProduct):
                     text_dp_list.append(product.dispatcher_data_prod)
                 else: # NB2WProduct contains NumpyDataProd by default
