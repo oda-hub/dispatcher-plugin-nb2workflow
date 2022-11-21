@@ -1,7 +1,7 @@
 import logging
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct
-from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, BinaryImageProduct
+from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, PictureProduct
 
 logger = logging.getLogger(__name__)
 
@@ -73,13 +73,13 @@ class NB2WTextProduct(NB2WProduct):
             raise ValueError(f'This is not a string: {text_data}')
         
 
-class NB2WBinaryImageProduct(NB2WProduct):
-    type_key = 'http://odahub.io/ontology#ODABinaryImage'
+class NB2WPictureProduct(NB2WProduct): 
+    type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
     
     def __init__(self, encoded_data):
         # NOTE: no dispatcher data product class here. (As well as in binary/text data)
         # Currently not needed but may be usefult later to generate fromtend representation etc.
-        self.dispatcher_data_prod = BinaryImageProduct.decode(encoded_data)
+        self.dispatcher_data_prod = PictureProduct.decode(encoded_data)
 
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'

@@ -1,6 +1,6 @@
 from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, SourceQuery
 from cdci_data_analysis.analysis.parameters import Parameter, Name
-from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WBinaryImageProduct, NB2WTextProduct
+from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
 
 def construct_parameter_lists(backend_param_dict):
@@ -100,7 +100,7 @@ class NB2WProductQuery(ProductQuery):
                     tab_dp_list.append(product.dispatcher_data_prod.table_data)
                 elif isinstance(product, NB2WBinaryProduct):
                     bin_dp_list.append(product.dispatcher_data_prod)
-                elif isinstance(product, NB2WBinaryImageProduct):
+                elif isinstance(product, NB2WPictureProduct):
                     bin_im_dp_list.append(product.dispatcher_data_prod) 
                 elif isinstance(product, NB2WTextProduct):
                     text_dp_list.append(product.dispatcher_data_prod)

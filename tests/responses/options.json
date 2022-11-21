@@ -1,1 +1,138 @@
-{"ascii_binary":{"output":{"binary_output":{"comment":" http://odahub.io/ontology#ODABinaryProduct","name":"binary_output","owl_type":"http://odahub.io/ontology#ODABinaryProduct","python_type":{"type_object":"<class 'str'>"},"value":" bin_string "},"image_output":{"comment":" http://odahub.io/ontology#ODABinaryImage","name":"image_output","owl_type":"http://odahub.io/ontology#ODABinaryImage","python_type":{"type_object":"<class 'str'>"},"value":" bin_image.encode() "},"text_output":{"comment":" http://odahub.io/ontology#ODATextProduct","name":"text_output","owl_type":"http://odahub.io/ontology#ODATextProduct","python_type":{"type_object":"<class 'str'>"},"value":" ascii_text "}},"parameters":{"some_param":{"comment":"","default_value":60,"name":"some_param","owl_type":"http://www.w3.org/2001/XMLSchema#int","python_type":{"type_object":"<class 'int'>"},"value":60}}},"image":{"output":{"result":{"comment":" http://odahub.io/ontology#Image","name":"result","owl_type":"http://odahub.io/ontology#Image","python_type":{"type_object":"<class 'str'>"},"value":" astroim.encode() "}},"parameters":{}},"lightcurve":{"output":{"comment":{"comment":" http://odahub.io/ontology#WorkflowResultComment","name":"comment","owl_type":"http://odahub.io/ontology#WorkflowResultComment","python_type":{"type_object":"<class 'str'>"},"value":"TEST COMMENT"},"result":{"comment":" http://odahub.io/ontology#LightCurve","name":"result","owl_type":"http://odahub.io/ontology#LightCurve","python_type":{"type_object":"<class 'str'>"},"value":" lc.encode() "}},"parameters":{"end_time":{"comment":" http://odahub.io/ontology#EndTime","default_value":"2021-06-30T15:59:37.0","name":"end_time","owl_type":"http://odahub.io/ontology#EndTime","python_type":{"type_object":"<class 'str'>"},"value":"2021-06-30T15:59:37.0"},"seed":{"comment":" example of additional parameter; also for reproducibility ","default_value":60,"name":"seed","owl_type":"http://www.w3.org/2001/XMLSchema#int","python_type":{"type_object":"<class 'int'>"},"value":60},"start_time":{"comment":" http://odahub.io/ontology#StartTime","default_value":"2021-06-25T05:59:37.0","name":"start_time","owl_type":"http://odahub.io/ontology#StartTime","python_type":{"type_object":"<class 'str'>"},"value":"2021-06-25T05:59:37.0"}}},"table":{"output":{"output":{"comment":" http://odahub.io/ontology#ODAAstropyTable","name":"output","owl_type":"http://odahub.io/ontology#ODAAstropyTable","python_type":{"type_object":"<class 'str'>"},"value":" oat.encode() "}},"parameters":{"some_param":{"comment":"","default_value":60,"name":"some_param","owl_type":"http://www.w3.org/2001/XMLSchema#int","python_type":{"type_object":"<class 'int'>"},"value":60}}}}
+{
+    "image": {
+        "output": {
+            "result": {
+                "comment": " http://odahub.io/ontology#Image",
+                "name": "result",
+                "owl_type": "http://odahub.io/ontology#Image",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " astroim.encode() "
+            }
+        },
+        "parameters": {}
+    },
+    "lightcurve": {
+        "output": {
+            "comment": {
+                "comment": " http://odahub.io/ontology#WorkflowResultComment",
+                "name": "comment",
+                "owl_type": "http://odahub.io/ontology#WorkflowResultComment",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": "TEST COMMENT"
+            },
+            "result": {
+                "comment": " http://odahub.io/ontology#LightCurve",
+                "name": "result",
+                "owl_type": "http://odahub.io/ontology#LightCurve",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " lc.encode() "
+            }
+        },
+        "parameters": {
+            "end_time": {
+                "comment": " http://odahub.io/ontology#EndTime",
+                "default_value": "2021-06-30T15:59:37.0",
+                "name": "end_time",
+                "owl_type": "http://odahub.io/ontology#EndTime",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": "2021-06-30T15:59:37.0"
+            },
+            "seed": {
+                "comment": " example of additional parameter; also for reproducibility ",
+                "default_value": 60,
+                "name": "seed",
+                "owl_type": "http://www.w3.org/2001/XMLSchema#int",
+                "python_type": {
+                    "type_object": "<class 'int'>"
+                },
+                "value": 60
+            },
+            "start_time": {
+                "comment": " http://odahub.io/ontology#StartTime",
+                "default_value": "2021-06-25T05:59:37.0",
+                "name": "start_time",
+                "owl_type": "http://odahub.io/ontology#StartTime",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": "2021-06-25T05:59:37.0"
+            }
+        }
+    },
+    "table": {
+        "output": {
+            "output": {
+                "comment": " http://odahub.io/ontology#ODAAstropyTable",
+                "name": "output",
+                "owl_type": "http://odahub.io/ontology#ODAAstropyTable",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " oat.encode() "
+            }
+        },
+        "parameters": {
+            "some_param": {
+                "comment": "",
+                "default_value": 60,
+                "name": "some_param",
+                "owl_type": "http://www.w3.org/2001/XMLSchema#int",
+                "python_type": {
+                    "type_object": "<class 'int'>"
+                },
+                "value": 60
+            }
+        }
+    },
+    "ascii_binary": {
+        "output": {
+            "binary_output": {
+                "comment": " http://odahub.io/ontology#ODABinaryProduct",
+                "name": "binary_output",
+                "owl_type": "http://odahub.io/ontology#ODABinaryProduct",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " bin_string "
+            },
+            "image_output": {
+                "comment": " http://odahub.io/ontology#ODAPictureProduct",
+                "name": "image_output",
+                "owl_type": "http://odahub.io/ontology#ODAPictureProduct",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " bin_image.encode() "
+            },
+            "text_output": {
+                "comment": " http://odahub.io/ontology#ODATextProduct",
+                "name": "text_output",
+                "owl_type": "http://odahub.io/ontology#ODATextProduct",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " ascii_text "
+            }
+        },
+        "parameters": {
+            "some_param": {
+                "comment": "",
+                "default_value": 60,
+                "name": "some_param",
+                "owl_type": "http://www.w3.org/2001/XMLSchema#int",
+                "python_type": {
+                    "type_object": "<class 'int'>"
+                },
+                "value": 60
+            }
+        }
+    }
+}

@@ -2,7 +2,7 @@ import json
 import logging
 import requests
 import imghdr
-from oda_api.data_products import BinaryImageProduct, ImageDataProduct
+from oda_api.data_products import PictureProduct, ImageDataProduct
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ def test_binimage_product(dispatcher_live_fixture, mock_backend):
     logger.info(jdata)
     assert c.status_code == 200
     imdata = jdata['products']['binary_image_product_list'][0]
-    oda_dp = BinaryImageProduct.decode(imdata)
+    oda_dp = PictureProduct.decode(imdata)
     assert oda_dp.img_type == 'png'
     
 def test_image_product(dispatcher_live_fixture, mock_backend):
