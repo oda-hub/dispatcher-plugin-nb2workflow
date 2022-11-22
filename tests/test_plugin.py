@@ -85,7 +85,10 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
     for elem in jdata[0]:
         if isinstance(elem, dict) and 'prod_dict' in elem.keys():
             prod_dict = elem['prod_dict']
-    assert prod_dict == {'lightcurve': 'lightcurve_query'}
+    assert prod_dict == {'ascii_binary': 'ascii_binary_query',
+                         'image': 'image_query',
+                         'lightcurve': 'lightcurve_query',
+                         'table': 'table_query'}
 
 def test_instrument_backend_unavailable(dispatcher_live_fixture):
     # current behaviour is to have instrument with no products, could be changed in the future
