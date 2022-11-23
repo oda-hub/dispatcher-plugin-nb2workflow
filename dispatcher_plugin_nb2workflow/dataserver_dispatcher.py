@@ -117,7 +117,7 @@ class NB2WDataDispatcher:
                                      message=except_message)
                 raise RuntimeError(f'Processing failed. {except_message}')
             comment_name = self.get_backend_comment(task.strip('/'))
-            comment_value = None
+            comment_value = ''
             if comment_name:
                 if 'data' in res.json().keys(): #async
                     comment_value = res.json()['data']['output'][comment_name]
