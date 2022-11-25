@@ -1,6 +1,8 @@
 import json
 import logging
 import requests
+import imghdr
+from oda_api.data_products import PictureProduct, ImageDataProduct
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,8 @@ expected_arguments = ["T1",
                       "T2",
                       "T_format",
                       "token",
-                      "seed"]
+                      "seed",
+                      "some_param"]
     
 def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
@@ -82,7 +85,10 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
     for elem in jdata[0]:
         if isinstance(elem, dict) and 'prod_dict' in elem.keys():
             prod_dict = elem['prod_dict']
-    assert prod_dict == {'lightcurve': 'lightcurve_query'}
+    assert prod_dict == {'ascii_binary': 'ascii_binary_query',
+                         'image': 'image_query',
+                         'lightcurve': 'lightcurve_query',
+                         'table': 'table_query'}
 
 def test_instrument_backend_unavailable(dispatcher_live_fixture):
     # current behaviour is to have instrument with no products, could be changed in the future
@@ -146,3 +152,82 @@ def test_pass_comment(dispatcher_live_fixture, mock_backend):
     assert c.status_code == 200
     assert 'TEST COMMENT' in jdata['exit_status']['comment']
     
+
+def test_table_product(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+    
+    with open('tests/responses/table.json', 'r') as fd:
+        tab_resp_json = json.loads(fd.read())
+        ascii_rep = tab_resp_json['output']['output']['ascii']
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': 'table',
+                              'api': 'True'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert jdata['products']['astropy_table_product_ascii_list'][0]['ascii'] == ascii_rep
+
+def test_text_product(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+    
+    with open('tests/responses/ascii_binary.json', 'r') as fd:
+        tab_resp_json = json.loads(fd.read())
+        ascii_rep = tab_resp_json['output']['text_output']
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': 'ascii_binary',
+                              'api': 'True'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert jdata['products']['text_product_list'][0] == ascii_rep
+    
+def test_binimage_product(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': 'ascii_binary',
+                              'api': 'True'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    imdata = jdata['products']['binary_image_product_list'][0]
+    oda_dp = PictureProduct.decode(imdata)
+    assert oda_dp.img_type == 'png'
+    
+def test_image_product(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': 'image',
+                              'api': 'True'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    imdata = jdata['products']['numpy_data_product_list'][0]
+    oda_ndp = ImageDataProduct.decode(imdata)
