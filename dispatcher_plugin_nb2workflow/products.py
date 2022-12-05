@@ -10,18 +10,19 @@ logger = logging.getLogger(__name__)
 class TableProduct(BaseQueryProduct):
     def __init__(self, name, table_data, file_dir = './', **kwargs):
         self.table_data = table_data
-        super().__init__(name, file_name=f"{name}.ecsv", file_dir = file_dir, **kwargs)
+        fname = name if name.endswith('csv') else f"{name}.ecsv"
+        super().__init__(name, file_name=fname, file_dir = file_dir, **kwargs)
 
     def encode(self):
         self.table_data.encode()
 
-    def write(self, file_name=None, overwrite=True, format='ascii.ecsv', file_dir=None):
+    def write(self, file_name=None, overwrite=True, file_dir=None):
         if file_name:
             file_path = self.file_path.get_file_path(file_name=file_name, file_dir=file_dir)
         else:
             file_path = self.file_path.path
             
-        self.table_data.write(f"{file_path}.{format.split('.')[-1]}", overwrite=overwrite, format=format)
+        self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
         
 class NB2WProduct:
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
@@ -161,4 +162,3 @@ class NB2WImageProduct(NB2WProduct):
     
     def __init__(self, encoded_data, out_dir = None, name = 'image'):
         super().__init__(encoded_data, data_product_type = ImageProduct, out_dir = out_dir, name = name)
-        # FIXME: something started to be wrong, investigate 
