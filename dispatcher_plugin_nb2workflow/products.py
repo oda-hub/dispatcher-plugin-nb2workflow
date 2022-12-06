@@ -3,6 +3,8 @@ import os
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, PictureProduct
+from .util import AstropyTableViewParser
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +43,10 @@ class NB2WProduct:
         file_path = self.dispatcher_data_prod.file_path
         self.dispatcher_data_prod.write()
         self.file_path = file_path.path
-        # FIXME: investigate error with astropy table 
     
     def get_html_draw(self):
-        pass
-        # TODO: 
+        return {'div': '', 'script': ''}
+        
     
     @classmethod 
     def _init_as_list(cls, *args, **kwargs):
@@ -72,11 +73,6 @@ class NB2WBinaryProduct(NB2WProduct):
     def __init__(self, encoded_data, out_dir = None, name = 'bindata'):
         self.out_dir = out_dir
         self.name = name
-        # only need to decode if we want to return file for frontend 
-        # TODO: where do we write?
-        # bin_data = BinaryData().decode(encoded_data)
-        # with open('binary_file_name', 'wb') as fd:
-        #     fd.write(bin_data)
         self.dispatcher_data_prod = encoded_data
     
     def write(self):
@@ -102,6 +98,9 @@ class NB2WTextProduct(NB2WProduct):
         with open(file_path, 'w') as fd:
             fd.write(self.dispatcher_data_prod)
         self.file_path = file_path
+        
+    def get_html_draw(self):
+        return {'div': '<br>'+self.dispatcher_data_prod, 'script': ''}
 
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
@@ -121,6 +120,11 @@ class NB2WPictureProduct(NB2WProduct):
         self.dispatcher_data_prod.write_file(file_path)
         self.file_path = file_path
 
+    def get_html_draw(self):
+        enc = self.dispatcher_data_prod.encode()
+        return {'div': f'<img src="data:image/{enc["img_type"]};base64,{enc["b64data"].replace("-", "+").replace("_", "/")}">', 
+                'script': ''}
+
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
@@ -133,6 +137,23 @@ class NB2WAstropyTableProduct(NB2WProduct):
                                                  table_data = table_data_prod,
                                                  meta_data=metadata,
                                                  file_dir = out_dir)
+    
+    def get_html_draw(self):
+        with StringIO() as sio:
+            self.dispatcher_data_prod.table_data.write(sio, format='jsviewer')
+            sio.seek(0)
+            html_text = sio.read()
+        
+        parser = AstropyTableViewParser()
+        parser.feed(html_text)
+        
+        script_text = parser.script.replace('$(document).ready', '').replace('$(', 'jQuery(').rpartition(');')[0] + ')();'
+        # TODO: style it. Probably use script and style the same as for catalog
+        
+        return {'div': parser.tabcode,
+                'script': f"<script>{script_text}</script>" 
+                }
+        
 class NB2WLightCurveList(NB2WProduct):
     type_key = 'http://odahub.io/ontology#LightCurveList'
     
