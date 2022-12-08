@@ -45,7 +45,10 @@ class NB2WProduct:
         self.file_path = file_path.path
     
     def get_html_draw(self):
-        return {'div': '', 'script': ''}
+        try:
+            return self.dispatcher_data_prod.get_html_draw()
+        except:
+            return {'image': {'div': '<br>No preview available', 'script': ''} }
         
     
     @classmethod 
@@ -100,7 +103,7 @@ class NB2WTextProduct(NB2WProduct):
         self.file_path = file_path
         
     def get_html_draw(self):
-        return {'div': '<br>'+self.dispatcher_data_prod, 'script': ''}
+        return {'image': {'div': '<br>'+self.dispatcher_data_prod, 'script': ''} }
 
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
@@ -122,8 +125,9 @@ class NB2WPictureProduct(NB2WProduct):
 
     def get_html_draw(self):
         enc = self.dispatcher_data_prod.encode()
-        return {'div': f'<img src="data:image/{enc["img_type"]};base64,{enc["b64data"].replace("-", "+").replace("_", "/")}">', 
-                'script': ''}
+        b64_dat = enc["b64data"].replace("-", "+").replace("_", "/") 
+        return {'image': {'div': f'<br><img src="data:image/{enc["img_type"]};base64,{b64_dat}">', 
+                          'script': ''} }
 
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
@@ -148,11 +152,9 @@ class NB2WAstropyTableProduct(NB2WProduct):
         parser.feed(html_text)
         
         script_text = parser.script.replace('$(document).ready', '').replace('$(', 'jQuery(').rpartition(');')[0] + ')();'
-        # TODO: style it. Probably use script and style the same as for catalog
         
-        return {'div': parser.tabcode,
-                'script': f"<script>{script_text}</script>" 
-                }
+        return {'image': {'div': '<br><br>'+parser.tabcode,
+                          'script': f"<script>{script_text}</script>"} }
         
 class NB2WLightCurveList(NB2WProduct):
     type_key = 'http://odahub.io/ontology#LightCurveList'
@@ -171,6 +173,26 @@ class NB2WLightCurveProduct(NB2WProduct):
         
     def __init__(self, encoded_data, out_dir = None, name = 'lc'):
         super().__init__(encoded_data, data_product_type = LightCurveProduct, out_dir = out_dir, name = name)
+        
+    def get_html_draw(self):
+        unit_ID=1 # TODO: it could be optional
+        du = self.dispatcher_data_prod.data.data_unit[unit_ID]
+        data, header, units = du.data, du.header, du.units_dict
+        data_col = data.dtype.names[1]
+        err_col = None
+        if len(data.dtype.names) == 3 and data.dtype.names[2].startswith('ERR'):
+            err_col = data.dtype.names[2]
+        x_label = f"TIME, {units['TIME']}"
+        y_units = getattr(units, data_col, None)
+        y_label = f"{data_col}, {y_units}" if y_units else data_col 
+        
+        im_dic = self.dispatcher_data_prod.get_html_draw(x = data['TIME'], 
+                                                         y=data[data_col], 
+                                                         dy=data[err_col] if err_col else None,
+                                                         x_label = x_label,
+                                                         y_label = y_label
+                                                         )
+        return im_dic
    
 class NB2WSpectrumProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Spectrum'

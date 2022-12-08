@@ -121,7 +121,7 @@ class NB2WProductQuery(ProductQuery):
                 file_name_list.append(os.path.basename(product.file_path))
                 im = product.get_html_draw()
                 if im:
-                    image_list.append({'image': im})
+                    image_list.append(im)
                 prod_name_list.append(product.name)
 
             query_out.prod_dictionary['file_name'] = file_name_list

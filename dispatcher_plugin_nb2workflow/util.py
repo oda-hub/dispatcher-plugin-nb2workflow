@@ -6,11 +6,13 @@ class AstropyTableViewParser(HTMLParser):
             self.inbody = True
         if tag == 'script':
             self.inscript = True
-        if tag == 'table':
-            self.intable = True
-            self.tabcode = ''
         if getattr(self, 'intable', False):
             self.tabcode += self.get_starttag_text()
+        if tag == 'table':
+            self.intable = True
+            attdic = dict(attrs)
+            self.tabcode = f'<table class="{attdic["class"]} mmoda" id="{attdic["id"]}">'
+ 
             
     def handle_endtag(self, tag):
         if tag == 'body':
