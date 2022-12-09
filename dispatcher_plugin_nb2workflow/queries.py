@@ -2,6 +2,7 @@ from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQ
 from cdci_data_analysis.analysis.parameters import Parameter, Name
 from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
+import os
 
 def construct_parameter_lists(backend_param_dict):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
@@ -87,14 +88,15 @@ class NB2WProductQuery(ProductQuery):
             _o_dict = res.json() 
         else:
             _o_dict = res.json()['data']
-        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output']) 
+        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output'], out_dir) 
         return prod_list
     
     def process_product_method(self, instrument, prod_list, api=False):
         query_out = QueryOutput()
         
+        
+        np_dp_list, bin_dp_list, tab_dp_list, bin_im_dp_list, text_dp_list = [], [], [], [], []
         if api is True:
-            np_dp_list, bin_dp_list, tab_dp_list, bin_im_dp_list, text_dp_list = [], [], [], [], []
             for product in prod_list.prod_list:
                 if isinstance(product, NB2WAstropyTableProduct):
                     tab_dp_list.append(product.dispatcher_data_prod.table_data)
@@ -106,20 +108,27 @@ class NB2WProductQuery(ProductQuery):
                     text_dp_list.append(product.dispatcher_data_prod)
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
+                    
             query_out.prod_dictionary['numpy_data_product_list'] = np_dp_list
             query_out.prod_dictionary['astropy_table_product_ascii_list'] = tab_dp_list
             query_out.prod_dictionary['binary_data_product_list'] = bin_dp_list
             query_out.prod_dictionary['binary_image_product_list'] = bin_im_dp_list
             query_out.prod_dictionary['text_product_list'] = text_dp_list
         else:
-            raise NotImplementedError
-            plot_dict = {'image': image_prod.get_plot()}
-            #image_prod.write() 
+            prod_name_list, file_name_list, image_list = [], [], []
+            for product in prod_list.prod_list:
+                product.write()
+                file_name_list.append(os.path.basename(product.file_path))
+                im = product.get_html_draw()
+                if im:
+                    image_list.append(im)
+                prod_name_list.append(product.name)
 
-            query_out.prod_dictionary['name'] = image_prod.name
-            query_out.prod_dictionary['file_name'] = 'foo' 
-            query_out.prod_dictionary['image'] = plot_dict
-            query_out.prod_dictionary['download_file_name'] = 'bar.tar.gz'
+            query_out.prod_dictionary['file_name'] = file_name_list
+            query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
+            query_out.prod_dictionary['name'] = prod_name_list
+            
+            query_out.prod_dictionary['download_file_name'] = 'foo.tar.gz' # TODO:
             query_out.prod_dictionary['prod_process_message'] = ''
 
         return query_out
