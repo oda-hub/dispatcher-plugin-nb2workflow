@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, PictureProduct
@@ -28,6 +29,7 @@ class TableProduct(BaseQueryProduct):
         
 class NB2WProduct:
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
+        encoded_data = self._dejsonify(encoded_data)
         self.name = encoded_data.get('name', name)
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
@@ -63,13 +65,18 @@ class NB2WProduct:
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
 
-            try:                        
+            try:                 
                 prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], out_dir = out_dir, name = key) )
             except Exception as e:
                 logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
 
         return prod_list
 
+    @staticmethod
+    def _dejsonify(encoded_data):
+        if isinstance(encoded_data, str):
+            return json.loads(encoded_data)
+        return encoded_data
 class NB2WBinaryProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
@@ -133,6 +140,7 @@ class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
     def __init__(self, encoded_data, out_dir = None, name = 'astropy_table'):
+        encoded_data = self._dejsonify(encoded_data)
         self.name = encoded_data.get('name', name)
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
