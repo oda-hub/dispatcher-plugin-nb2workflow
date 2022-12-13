@@ -29,7 +29,6 @@ class TableProduct(BaseQueryProduct):
         
 class NB2WProduct:
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
-        encoded_data = self._dejsonify(encoded_data)
         self.name = encoded_data.get('name', name)
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
@@ -54,8 +53,13 @@ class NB2WProduct:
         
     
     @classmethod 
-    def _init_as_list(cls, *args, **kwargs):
-        return [cls(*args, **kwargs)]        
+    def _init_as_list(cls, encoded_data, *args, **kwargs):
+        encoded_data = cls._dejsonify(encoded_data)
+        
+        if isinstance(encoded_data, list):
+            return [cls(elem, *args, **kwargs) for elem in encoded_data]
+        
+        return [cls(encoded_data, *args, **kwargs)]
 
     @classmethod
     def prod_list_factory(cls, output_description_dict, output, out_dir = None):
@@ -65,7 +69,7 @@ class NB2WProduct:
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
 
-            try:                 
+            try:
                 prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], out_dir = out_dir, name = key) )
             except Exception as e:
                 logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
@@ -75,7 +79,10 @@ class NB2WProduct:
     @staticmethod
     def _dejsonify(encoded_data):
         if isinstance(encoded_data, str):
-            return json.loads(encoded_data)
+            try:
+                return json.loads(encoded_data)
+            except json.decoder.JSONDecodeError:
+                pass
         return encoded_data
 class NB2WBinaryProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
@@ -117,8 +124,8 @@ class NB2WPictureProduct(NB2WProduct):
     
     def __init__(self, encoded_data, out_dir = None, name = 'picture'):
         self.out_dir = out_dir
-        # NOTE: no dispatcher data product class here. (As well as in binary/text data)
-        # Currently not needed but may be usefult later to generate fromtend representation etc.
+        # NOTE: dispatcher_data_product is not a dispatcher class here (as well as in binary/text data). 
+        # Use oda_api prod directly
         self.dispatcher_data_prod = PictureProduct.decode(encoded_data)
         fname = getattr(self.dispatcher_data_prod, 'file_path', None)
         if fname is None:
@@ -140,7 +147,6 @@ class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
     def __init__(self, encoded_data, out_dir = None, name = 'astropy_table'):
-        encoded_data = self._dejsonify(encoded_data)
         self.name = encoded_data.get('name', name)
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
@@ -164,18 +170,6 @@ class NB2WAstropyTableProduct(NB2WProduct):
         return {'image': {'div': '<br><br>'+parser.tabcode,
                           'script': f"<script>{script_text}</script>"} }
         
-class NB2WLightCurveList(NB2WProduct):
-    type_key = 'http://odahub.io/ontology#LightCurveList'
-    
-    @classmethod
-    def _init_as_list(cls, encoded_obj, out_dir = None, name = 'lc_list'):
-        if type(encoded_obj) != list:
-            raise ValueError('Wrong backend product structure')
-        out_list = []
-        for nn, lc_dict in enumerate(encoded_obj):
-            out_list.append(NB2WLightCurveProduct(lc_dict, out_dir = out_dir, name = f"{name}_{nn}"))
-        return out_list
-
 class NB2WLightCurveProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#LightCurve'
         
