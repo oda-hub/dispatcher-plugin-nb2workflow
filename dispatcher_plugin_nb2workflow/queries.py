@@ -1,4 +1,4 @@
-from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, SourceQuery
+from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, InstrumentQuery
 from cdci_data_analysis.analysis.parameters import Parameter, Name
 from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
@@ -133,7 +133,8 @@ class NB2WProductQuery(ProductQuery):
 
         return query_out
     
-class NB2WInstrumentQuery(BaseQuery):
+class NB2WInstrumentQuery(InstrumentQuery):
     def __init__(self, name):
-        self.input_prod_list_name = None # this is a workaround
-        super().__init__(name, [])
+        super().__init__(name)
+        self._parameters_list = []
+        self._build_par_dictionary()
