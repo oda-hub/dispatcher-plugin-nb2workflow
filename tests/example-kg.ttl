@@ -1,0 +1,8 @@
+@prefix oda: <http://odahub.io/ontology#> .
+
+<https://path.to/repo.git> a oda:Workflow,
+                             oda:WorkflowService,
+                             oda:workflow ;
+    oda:deployment_name "kgexample-workflow-backend" ;
+    oda:deployment_namespace "oda-staging" ;
+    oda:service_name "kgexample" .

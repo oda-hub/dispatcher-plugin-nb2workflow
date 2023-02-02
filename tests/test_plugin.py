@@ -16,6 +16,12 @@ instruments:
     dummy_cache: ""
 """
 
+config_local_kg = """
+kg:
+  type: "turtle"
+  path: "tests/example-kg.ttl"
+"""
+
 expected_arguments = ["T1",
                       "T2",
                       "T_format",
@@ -231,3 +237,32 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     assert c.status_code == 200
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
+
+def test_local_kg(conf_file, dispatcher_live_fixture):  
+    with open(conf_file, 'w') as fd:
+        fd.write(config_local_kg)
+        
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/instr-list",
+                    params = {'instrument': 'mock'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert 'kgexample' in jdata
+    
+def test_default_kg(conf_file, dispatcher_live_fixture):  
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/instr-list",
+                    params = {'instrument': 'mock'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert 'lightcurve-example' in jdata
