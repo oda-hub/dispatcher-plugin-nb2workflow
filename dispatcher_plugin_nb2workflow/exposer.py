@@ -6,41 +6,76 @@ from . import conf_file
 import json
 import yaml
 import requests
+import rdflib as rdf
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-def kg_select(t):
-    #TODO: use fragment or static regularly updated location instead, for performance and resilience
-    r = requests.get("https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query",
-                params={"query": f"""
-                    SELECT * WHERE {{
-                        {t}
-                    }} LIMIT 100
-                """})
-                
-    if r.status_code != 200:
-        raise RuntimeError(f'{r}: {r.text}')
+def kg_select(t, kg_conf_dict):
+    if kg_conf_dict is None:
+        logger.info('Not using KG to get instruments')
+        qres_js = []
+    elif kg_conf_dict.get('type') == 'query-service':
+        #TODO: use fragment or static regularly updated location instead, for performance and resilience
+        r = requests.get(kg_conf_dict['path'],
+                    params={"query": f"""
+                        SELECT * WHERE {{
+                            {t}
+                        }} LIMIT 100
+                    """})
+                    
+        if r.status_code != 200:
+            raise RuntimeError(f'{r}: {r.text}')
+        
+        qres_js = r.json()['results']['bindings']
 
-    logger.warning(json.dumps(r.json()['results']['bindings'], indent=4))
-
-    return r.json()['results']['bindings']
-
-
-
-def read_conf_file(conf_file=None):
-    if conf_file is None:
-        cfg_dict = {'instruments': {}}
+    elif kg_conf_dict.get('type') == 'turtle':
+        graph = rdf.Graph()
+        graph.parse(kg_conf_dict['path'])
+        qres = graph.query(f"""
+                        SELECT * WHERE {{
+                            {t}
+                        }} LIMIT 100
+                    """)
+        qres_js = json.loads(qres.serialize(format='json'))['results']['bindings']
+    
     else:
-        with open(conf_file, 'r') as ymlfile:
-            cfg_dict = yaml.load(ymlfile, Loader=yaml.SafeLoader)
+        logger.warning('Unknown KG type')
+        qres_js = []
+            
+    logger.warning(json.dumps(qres_js, indent=4))
+    
+    return qres_js
+    
+
+def get_instr_conf(from_conf_file=None):
+    global conf_file
+    
+    # current default - query central oda kb
+    kg_conf_dict = {'type': 'query-service',  
+                    'path': "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"}
+    cfg_dict = {'instruments': {}}
+    
+    if from_conf_file is not None:
+        with open(from_conf_file, 'r') as ymlfile:
+            f_cfg_dict = yaml.load(ymlfile, Loader=yaml.SafeLoader)
+            if f_cfg_dict is not None:
+                if 'instruments' in f_cfg_dict.keys():
+                    cfg_dict['instruments'] = f_cfg_dict['instruments']
+                else:
+                    conf_file = None
+                if 'kg' in f_cfg_dict.keys():
+                    kg_conf_dict = f_cfg_dict['kg']
+            else:
+                conf_file = None
+        
     
     for r in kg_select('''
             ?w a <http://odahub.io/ontology#WorkflowService>;
                <http://odahub.io/ontology#deployment_name> ?deployment_name;
                <http://odahub.io/ontology#service_name> ?service_name .               
-        '''): 
+        ''', kg_conf_dict): 
 
         logger.info('found instrument service record %s', r)
         cfg_dict['instruments'][r['service_name']['value']] = {
@@ -50,7 +85,7 @@ def read_conf_file(conf_file=None):
     
     return cfg_dict
 
-config_dict = read_conf_file(conf_file)
+config_dict = get_instr_conf(conf_file)
 
 def factory_factory(instr_name):
     def instr_factory():

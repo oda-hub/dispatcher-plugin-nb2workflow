@@ -12,7 +12,7 @@ class NB2WDataDispatcher:
                 config = DataServerConf.from_conf_dict(exposer.config_dict['instruments'][iname])
             except:
                 #this happens if the instrument is not found in the instrument config, which is always read from a static file
-                config = DataServerConf.from_conf_dict(exposer.read_conf_file()['instruments'][iname])
+                config = DataServerConf.from_conf_dict(exposer.get_instr_conf()['instruments'][iname])
             
         self.data_server_url = config.data_server_url
         self.task = task
