@@ -9,6 +9,13 @@
     oda:service_name "kgexample" ;
     sdo:creativeWorkStatus "development" .
 
+<https://path.to/unlab.git> a oda:Workflow,
+                             oda:WorkflowService,
+                             oda:workflow ;
+    oda:deployment_name "kgunlab-workflow-backend" ;
+    oda:deployment_namespace "oda-staging" ;
+    oda:service_name "kgunlab" .
+
 <https://path.to/prod.git> a oda:Workflow,
                              oda:WorkflowService,
                              oda:workflow ;

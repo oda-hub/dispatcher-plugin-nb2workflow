@@ -292,8 +292,10 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
         assert 'kgprod' in jdata
         if privileged:
             assert 'kgexample' in jdata
+            assert 'kgunlab' in jdata
         else:
             assert 'kgexample' not in jdata
+            assert 'kgunlab' not in jdata
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
