@@ -17,7 +17,6 @@ def kg_select(t, kg_conf_dict):
         logger.info('Not using KG to get instruments')
         qres_js = []
     elif kg_conf_dict.get('type') == 'query-service':
-        #TODO: use fragment or static regularly updated location instead, for performance and resilience
         r = requests.get(kg_conf_dict['path'],
                     params={"query": f"""
                         SELECT * WHERE {{
@@ -52,7 +51,8 @@ def kg_select(t, kg_conf_dict):
 def get_instr_conf(from_conf_file=None):
     global conf_file
     
-    # current default - query central oda kb
+    # current default - query central oda kb 
+    # TODO: better default will be some regullary updated static location
     kg_conf_dict = {'type': 'query-service',  
                     'path': "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"}
     cfg_dict = {'instruments': {}}
