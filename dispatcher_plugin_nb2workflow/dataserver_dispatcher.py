@@ -9,7 +9,7 @@ class NB2WDataDispatcher:
         iname = instrument if isinstance(instrument, str) else instrument.name
         if config is None:
             try:
-                config = DataServerConf.from_conf_dict(exposer.config_dict['instruments'][iname])
+                config = DataServerConf.from_conf_dict(exposer.config_dict['instruments'][iname], allowed_keys = ['restricted_access'])
             except:
                 #this happens if the instrument is not found in the instrument config, which is always read from a static file
                 config = DataServerConf.from_conf_dict(exposer.get_instr_conf()['instruments'][iname])

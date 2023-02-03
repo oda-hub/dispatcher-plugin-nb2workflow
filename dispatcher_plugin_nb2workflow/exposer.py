@@ -30,7 +30,7 @@ def kg_select(t, kg_conf_dict):
         
         qres_js = r.json()['results']['bindings']
 
-    elif kg_conf_dict.get('type') == 'turtle':
+    elif kg_conf_dict.get('type') == 'file':
         graph = rdf.Graph()
         graph.parse(kg_conf_dict['path'])
         qres = graph.query(f"""
@@ -74,26 +74,28 @@ def get_instr_conf(from_conf_file=None):
     for r in kg_select('''
             ?w a <http://odahub.io/ontology#WorkflowService>;
                <http://odahub.io/ontology#deployment_name> ?deployment_name;
-               <http://odahub.io/ontology#service_name> ?service_name .               
+               <http://odahub.io/ontology#service_name> ?service_name ;
+               <https://schema.org/creativeWorkStatus>?  ?work_status .               
         ''', kg_conf_dict): 
 
         logger.info('found instrument service record %s', r)
         cfg_dict['instruments'][r['service_name']['value']] = {
             "data_server_url": f"http://{r['deployment_name']['value']}:8000",
-            "dummy_cache": ""
+            "dummy_cache": "",
+            "restricted_access": False if r['work_status']['value'] == "production" else True
         }
     
     return cfg_dict
 
 config_dict = get_instr_conf(conf_file)
 
-def factory_factory(instr_name):
+def factory_factory(instr_name, restricted_access):
     def instr_factory():
         backend_options = NB2WDataDispatcher(instrument=instr_name).query_backend_options()
         query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(backend_options)
         return Instrument(instr_name,
                         src_query = NB2WSourceQuery.from_backend_options(backend_options),
-                        instrumet_query = NB2WInstrumentQuery('instr_query'),
+                        instrumet_query = NB2WInstrumentQuery('instr_query', restricted_access),
                         data_serve_conf_file=conf_file,
                         product_queries_list=query_list,
                         query_dictionary=query_dict,
@@ -102,5 +104,5 @@ def factory_factory(instr_name):
                         )
     return instr_factory
 
-instr_factory_list = [ factory_factory(instr_name) 
-                       for instr_name in config_dict['instruments'].keys() ]
+instr_factory_list = [ factory_factory(instr_name, instr_conf.get('restricted_access', False)) 
+                       for instr_name, instr_conf in config_dict['instruments'].items() ]
