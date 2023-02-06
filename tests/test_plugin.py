@@ -3,6 +3,9 @@ import logging
 import requests
 import imghdr
 from oda_api.data_products import PictureProduct, ImageDataProduct
+import time
+import jwt
+import pytest
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +19,30 @@ instruments:
     dummy_cache: ""
 """
 
+config_local_kg = """
+kg:
+  type: "file"
+  path: "tests/example-kg.ttl"
+"""
+
 expected_arguments = ["T1",
                       "T2",
                       "T_format",
                       "token",
                       "seed",
                       "some_param"]
-    
+
+secret_key = 'secretkey_test'
+default_exp_time = int(time.time()) + 5000
+
+token_payload = {'sub': "user@example.com",
+                         'name': "username",
+                         'roles': "oda workflow developer",
+                         'exp': default_exp_time,
+                         'tem': 0}
+encoded_token = jwt.encode(token_payload, secret_key, algorithm='HS256')
+
+
 def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
 
@@ -231,3 +251,52 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     assert c.status_code == 200
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
+
+def test_default_kg(dispatcher_live_fixture):  
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/instr-list",
+                    params = {'instrument': 'mock', 
+                              'token': encoded_token})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200 
+    assert 'lightcurve-example' in jdata # TODO: change to what will be used in docs
+
+@pytest.mark.parametrize("privileged", [True, False])
+def test_local_kg(conf_file, dispatcher_live_fixture, privileged):  
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+        
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write(config_local_kg)
+            
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+
+        params = {'instrument': 'mock'}
+        if privileged:
+            params['token'] = encoded_token
+            
+        c = requests.get(server + "/instr-list",
+                        params = params)
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200
+        assert 'kgprod' in jdata
+        if privileged:
+            assert 'kgexample' in jdata
+            assert 'kgunlab' in jdata
+        else:
+            assert 'kgexample' not in jdata
+            assert 'kgunlab' not in jdata
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+    

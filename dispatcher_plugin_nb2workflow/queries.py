@@ -134,7 +134,7 @@ class NB2WProductQuery(ProductQuery):
         return query_out
     
 class NB2WInstrumentQuery(InstrumentQuery):
-    def __init__(self, name):
-        super().__init__(name)
+    def __init__(self, name, restricted_access):
+        super().__init__(name, restricted_access=restricted_access)
         self._parameters_list = []
         self._build_par_dictionary()
