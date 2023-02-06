@@ -252,7 +252,7 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
-def test_default_kg(conf_file, dispatcher_live_fixture):  
+def test_default_kg(dispatcher_live_fixture):  
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
 
