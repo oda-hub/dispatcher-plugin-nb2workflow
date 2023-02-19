@@ -65,6 +65,8 @@ def get_instr_conf(from_conf_file=None):
                     cfg_dict['instruments'] = f_cfg_dict['instruments']
                 else:
                     conf_file = None
+                if 'ontology_path' in f_cfg_dict.keys():
+                    cfg_dict['ontology_path'] = f_cfg_dict['ontology_path']
                 if 'kg' in f_cfg_dict.keys():
                     kg_conf_dict = f_cfg_dict['kg']
             else:
@@ -88,13 +90,14 @@ def get_instr_conf(from_conf_file=None):
     return cfg_dict
 
 config_dict = get_instr_conf(conf_file)
+ontology_path = config_dict.get('ontology_path', 'http://odahub.io/ontology/ontology.ttl')
 
 def factory_factory(instr_name, restricted_access):
     def instr_factory():
         backend_options = NB2WDataDispatcher(instrument=instr_name).query_backend_options()
-        query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(backend_options)
+        query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(backend_options, ontology_path)
         return Instrument(instr_name,
-                        src_query = NB2WSourceQuery.from_backend_options(backend_options),
+                        src_query = NB2WSourceQuery.from_backend_options(backend_options, ontology_path),
                         instrumet_query = NB2WInstrumentQuery('instr_query', restricted_access),
                         data_serve_conf_file=conf_file,
                         product_queries_list=query_list,

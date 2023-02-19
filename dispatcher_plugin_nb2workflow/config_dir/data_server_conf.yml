@@ -2,3 +2,4 @@ instruments:
   example:
     data_server_url: http://localhost:9393
     dummy_cache: required-but-not-used    
+ontology_path: /home/dsavchenko/Projects/cloud/dispatcher-container/cdci_data_analysis/tests/oda-ontology.ttl
