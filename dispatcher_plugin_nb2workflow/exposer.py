@@ -7,6 +7,7 @@ import json
 import yaml
 import requests
 import rdflib as rdf
+import os
 
 import logging
 logger = logging.getLogger(__name__)
@@ -90,7 +91,11 @@ def get_instr_conf(from_conf_file=None):
     return cfg_dict
 
 config_dict = get_instr_conf(conf_file)
-ontology_path = config_dict.get('ontology_path', 'http://odahub.io/ontology/ontology.ttl')
+if 'ODA_ONTOLOGY_PATH' in os.environ:
+    ontology_path = os.environ.get('ODA_ONTOLOGY_PATH')
+else:
+    ontology_path = config_dict.get('ontology_path', 
+                                    'http://odahub.io/ontology/ontology.ttl')
 
 def factory_factory(instr_name, restricted_access):
     def instr_factory():

@@ -9,7 +9,8 @@ on:
   pull_request:
     branches: [ master ]
 
-
+env:
+  ODA_ONTOLOGY_PATH: tests/oda-ontology.ttl
 
 jobs:
   build:
@@ -43,4 +44,5 @@ jobs:
         mypy dispatcher_plugin_nb2workflow --ignore-missing-imports || echo 'this is fine too!'
     - name: Test with pytest
       run: |
+        curl -o $ODA_ONTOLOGY_PATH https://raw.githubusercontent.com/oda-hub/dispatcher-app/ontology-parameters/tests/oda-ontology.ttl
         python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -sv --full-trace --log-cli-level=DEBUG
