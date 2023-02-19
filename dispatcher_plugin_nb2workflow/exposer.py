@@ -96,6 +96,7 @@ if 'ODA_ONTOLOGY_PATH' in os.environ:
 else:
     ontology_path = config_dict.get('ontology_path', 
                                     'http://odahub.io/ontology/ontology.ttl')
+logger.info('Using ontology from %s', ontology_path)
 
 def factory_factory(instr_name, restricted_access):
     def instr_factory():
