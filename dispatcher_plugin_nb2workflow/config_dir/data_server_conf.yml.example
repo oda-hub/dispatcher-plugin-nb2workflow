@@ -1,0 +1,9 @@
+kg:
+  type: file
+  path: /path/to/local/kg.ttl
+instruments:
+  example:
+    data_server_url: http://localhost:9393
+    dummy_cache: required-but-not-used   
+    restricted_access: false
+ontology_path: /path/to/local/ontology.ttl

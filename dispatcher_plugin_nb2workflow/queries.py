@@ -4,7 +4,7 @@ from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, N
 from .dataserver_dispatcher import NB2WDataDispatcher
 import os
 
-def construct_parameter_lists(backend_param_dict):
+def construct_parameter_lists(backend_param_dict, ontology_path):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
                             "http://odahub.io/ontology#StartTime": "T1",
@@ -21,12 +21,16 @@ def construct_parameter_lists(backend_param_dict):
             source_plist.append(Parameter.from_owl_uri(pval['owl_type'], 
                                                        value=pval['default_value'], 
                                                        name=default_pname,
-                                                       Time_format_name='T_format'))
+                                                       ontology_path=ontology_path,
+                                                       extra_ttl=pval.get("extra_ttl")
+                                                       ))
         else:
             plist.append(Parameter.from_owl_uri(pval['owl_type'], 
                                                 value=pval['default_value'], 
                                                 name=pname,
-                                                Time_format_name='T_format'))
+                                                ontology_path=ontology_path,
+                                                extra_ttl=pval.get("extra_ttl")
+                                                ))
     
     return {'source_plist': source_plist,
             'prod_plist': plist,
@@ -34,14 +38,14 @@ def construct_parameter_lists(backend_param_dict):
 
 class NB2WSourceQuery(BaseQuery):
     @classmethod
-    def from_backend_options(cls, backend_options):
+    def from_backend_options(cls, backend_options, ontology_path):
         product_names = backend_options.keys()
         # Note that different backend products could contain different sets of the source query parameters. 
         # So we squash them into one list without duplicates
         parameters_dict = {}
         for product_name in product_names:
             backend_param_dict = backend_options[product_name]['parameters']
-            prod_source_plist = construct_parameter_lists(backend_param_dict)['source_plist']
+            prod_source_plist = construct_parameter_lists(backend_param_dict, ontology_path)['source_plist']
             for par in prod_source_plist:
                 parameters_dict[par.name] = par
         parameters_list = list(parameters_dict.values())
@@ -49,23 +53,23 @@ class NB2WSourceQuery(BaseQuery):
         return cls('src_query', parameters_list)
 
 class NB2WProductQuery(ProductQuery): 
-    def __init__(self, name, backend_product_name, backend_param_dict, backend_output_dict):
+    def __init__(self, name, backend_product_name, backend_param_dict, backend_output_dict, ontology_path):
         self.backend_product_name = backend_product_name
         self.backend_output_dict = backend_output_dict
-        parameter_lists = construct_parameter_lists(backend_param_dict)
+        parameter_lists = construct_parameter_lists(backend_param_dict, ontology_path)
         self.par_name_substitution = parameter_lists['par_name_substitution']
         plist = parameter_lists['prod_plist']
         super().__init__(name, parameters_list = plist)
     
     @classmethod
-    def query_list_and_dict_factory(cls, backend_options):
+    def query_list_and_dict_factory(cls, backend_options, ontology_path):
         product_names = backend_options.keys()
         qlist = []
         qdict = {}
         for product_name in product_names:
             backend_param_dict = backend_options[product_name]['parameters']
             backend_output_dict = backend_options[product_name]['output']
-            qlist.append(cls(f'{product_name}_query', product_name, backend_param_dict, backend_output_dict))
+            qlist.append(cls(f'{product_name}_query', product_name, backend_param_dict, backend_output_dict, ontology_path))
             qdict[product_name] = f'{product_name}_query'
         return qlist, qdict
         
