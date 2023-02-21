@@ -97,8 +97,15 @@ class NB2WProductQuery(ProductQuery):
     def get_data_server_query(self, instrument, config=None, **kwargs):
         param_dict = {}
         for param_name in instrument.get_parameters_name_list():
-            param_dict[self.par_name_substitution.get(param_name, param_name)] = instrument.get_par_by_name(param_name).value
-        
+            param_instance = instrument.get_par_by_name(param_name)
+            bk_pname = self.par_name_substitution.get(param_name, param_name)
+            if getattr(param_instance, 'par_default_format'):
+                param_dict[bk_pname] = param_instance.get_value_in_default_format()
+            elif getattr(param_instance, 'default_units'):
+                param_dict[bk_pname] = param_instance.get_value_in_default_units()
+            else:
+                param_dict[bk_pname] = param_instance.value
+                
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
                                                 param_dict=param_dict,
