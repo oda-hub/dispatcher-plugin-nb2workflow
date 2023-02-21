@@ -2,8 +2,23 @@ from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQ
 from cdci_data_analysis.analysis.parameters import Parameter, Name
 from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
+from cdci_data_analysis.analysis.ontology import Ontology
 import os
+from functools import lru_cache
+from json import dumps
 
+class HashableDict(dict):
+    def __hash__(self):
+        return hash(dumps(self))
+
+def with_hashable_dict(func):
+    def wrapper(backend_param_dict, ontology_path):
+        return func(HashableDict(backend_param_dict), ontology_path)
+    return wrapper
+
+
+@with_hashable_dict
+@lru_cache
 def construct_parameter_lists(backend_param_dict, ontology_path):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
@@ -15,8 +30,13 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
     plist = []
     source_plist = []
     for pname, pval in backend_param_dict.items():
-        if pval['owl_type'] in src_query_pars_uris.keys():
-            default_pname = src_query_pars_uris[pval['owl_type']]
+        onto = Ontology(ontology_path)
+        if pval.get("extra_ttl"):
+            onto.parse_extra_ttl(pval.get("extra_ttl"))
+        onto_class_hierarchy = onto.get_parameter_hierarchy(pval['owl_type'])
+        src_query_owl_uri_set = set(onto_class_hierarchy).intersection(src_query_pars_uris.keys())
+        if src_query_owl_uri_set:
+            default_pname = src_query_pars_uris[src_query_owl_uri_set.pop()]
             par_name_substitution[ default_pname ] = pname
             source_plist.append(Parameter.from_owl_uri(pval['owl_type'], 
                                                        value=pval['default_value'], 
