@@ -105,10 +105,7 @@ class NB2WTextProduct(NB2WProduct):
     def __init__(self, text_data, out_dir = None, name = 'text'):
         self.out_dir = out_dir
         self.name = name
-        if isinstance(text_data, str):
-            self.dispatcher_data_prod = text_data
-        else:
-            raise ValueError(f'This is not a string: {text_data}')
+        self.dispatcher_data_prod = str(text_data)
         
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
