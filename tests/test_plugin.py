@@ -1,21 +1,21 @@
 import json
 import logging
 import requests
-import imghdr
 from oda_api.data_products import PictureProduct, ImageDataProduct
 import time
 import jwt
 import pytest
+from cdci_data_analysis.analysis.exceptions import RequestNotUnderstood
 
 logger = logging.getLogger(__name__)
 
 config_two_instruments = """    
 instruments:
   example0:
-    data_server_url: http://localhost:9393
+    data_server_url: http://localhost:9494
     dummy_cache: ""
   example1:
-    data_server_url: http://localhost:9494
+    data_server_url: http://localhost:9595
     dummy_cache: ""
 """
 
@@ -23,6 +23,14 @@ config_local_kg = """
 kg:
   type: "file"
   path: "tests/example-kg.ttl"
+"""
+
+config_real_nb2service = """
+instruments:
+  example:
+    data_server_url: %s
+    dummy_cache: ""
+    restricted_access: false
 """
 
 expected_arguments = ["T1",
@@ -42,6 +50,8 @@ token_payload = {'sub': "user@example.com",
                          'tem': 0}
 encoded_token = jwt.encode(token_payload, secret_key, algorithm='HS256')
 
+def sorted_items(dic):
+    return sorted(dic.items(), key = lambda x: x[0])
 
 def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
@@ -278,6 +288,9 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
         server = dispatcher_live_fixture
         logger.info("constructed server: %s", server)
 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
         params = {'instrument': 'mock'}
         if privileged:
             params['token'] = encoded_token
@@ -299,4 +312,93 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
-    
+
+@pytest.mark.fullstack
+@pytest.mark.parametrize("set_param, expect_param, wrong",
+                         [({}, {}, False),
+                          
+                          ({'T_format': 'isot',
+                            'time_instance': '2019-09-19T12:00:0.000',
+                            'T1': '2019-09-19T12:00:0.000',
+                            'T2': '2019-09-20T12:00:0.000'}, 
+                           {'time_instance': '2019-09-19T12:00:0.000', 
+                            'T1': 58745.5, 'T2': 58746.5}, False),
+                          
+                          ({'T_format': 'mjd', 'time_instance': 58745.5, 'T2': 58746.5}, 
+                           {'time_instance': '2019-09-19T12:00:0.000', 
+                            'T2': '2019-09-20T12:00:0.000'}, False),
+                          
+                          ({'RA': 23.5, 'DEC': 33.3}, {'poi_ra': 23.5, 'poi_dec': 33.3}, False),
+                          
+                          ({'energy': 500, 'band': 'b', 'free_energy': 1000, 'E_units': 'keV'}, 
+                           {'energy': 500, 'band': 'b', 'free_energy': 1.}, False),
+                          
+                          ({'visible_band': 'z'}, {'visible_band': 'z'}, True),
+                          
+                          ({'energy': 1000}, {'energy': 1000}, True)
+                          ])
+def test_full_stack(live_nb2service,
+                    conf_file, 
+                    dispatcher_live_fixture,  
+                    set_param, 
+                    expect_param,
+                    wrong):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        default_ex_params = {'band': 'z', 
+                          'T2': 56005.0, 
+                          'energy': 50.0, 
+                          'DEC': 20.0, 
+                          'RA': 10.0, 
+                          'radius': 3.0, 
+                          'T1': 56000.0, 
+                          'time_instance': '2017-08-17T12:43:0.000', 
+                          'visible_band': 'v',
+                          'free_energy': 3.}
+        default_in_params = {'band': 'z', 
+                          'end_time': 56005.0, 
+                          'energy': 50.0, 
+                          'poi_dec': 20.0, 
+                          'poi_ra': 10.0, 
+                          'radius': 3.0, 
+                          'start_time': 56000.0, 
+                          'time_instance': '2017-08-17T12:43:0.000', 
+                          'visible_band': 'v',
+                          'free_energy': 3.}
+        request_params = default_ex_params.copy()
+        expected_params = default_in_params.copy()
+        
+        for k, v in set_param.items():
+            request_params[k] = v
+        for k, v in expect_param.items():
+            expected_params[k] = v
+        
+        from oda_api.api import DispatcherAPI
+        disp = DispatcherAPI(url=server)
+        if wrong:
+            with pytest.raises(RequestNotUnderstood):
+                disp.get_product(instrument = "example",
+                                 product = "echo",
+                                 **request_params)
+        else:
+            res = disp.get_product(instrument = "example",
+                            product = "echo",
+                            **request_params)
+            
+            assert sorted_items(eval(res.echo_0)) == sorted_items(expected_params) 
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
