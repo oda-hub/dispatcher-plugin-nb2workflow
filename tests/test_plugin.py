@@ -320,14 +320,14 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
                          [({}, {}, False),
                           
                           ({'T_format': 'isot',
-                            'time_instant': '2019-09-19T12:00:0.000',
-                            'T1': '2019-09-19T12:00:0.000',
-                            'T2': '2019-09-20T12:00:0.000'}, 
-                           {'time_instant': '2019-09-19T12:00:0.000', 
+                            'time_instant': '2019-09-19T12:00:00.000',
+                            'T1': '2019-09-19T12:00:00.000',
+                            'T2': '2019-09-20T12:00:00.000'}, 
+                           {'time_instant': '2019-09-19T12:00:00.000', 
                             'start_time': 58745.5, 'end_time': 58746.5}, False),
                           
                           ({'T_format': 'mjd', 'time_instant': 58745.5, 'T2': 58746.5}, 
-                           {'time_instant': '2019-09-19T12:00:0.000', 
+                           {'time_instant': '2019-09-19T12:00:00.000', 
                             'end_time': 58746.5}, False),
                           
                           ({'RA': 23.5, 'DEC': 33.3}, {'poi_ra': 23.5, 'poi_dec': 33.3}, False),
@@ -359,15 +359,6 @@ def test_full_stack(live_nb2service,
         c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
         assert c.status_code == 200 
         
-        default_ex_params = {'band': 'z', 
-                          'T2': 56005.0, 
-                          'energy': 50.0, 
-                          'DEC': 20.0, 
-                          'RA': 10.0, 
-                          'radius': 3.0, 
-                          'T1': 56000.0, 
-                          'time_instant': '2017-08-17T12:43:0.000', 
-                          'visible_band': 'v'}
         default_in_params = {'band': 'z', 
                           'end_time': 56005.0, 
                           'energy': 50.0, 
@@ -375,9 +366,9 @@ def test_full_stack(live_nb2service,
                           'poi_ra': 10.0, 
                           'radius': 3.0, 
                           'start_time': 56000.0, 
-                          'time_instant': '2017-08-17T12:43:0.000', 
+                          'time_instant': '2017-08-17T12:43:00.000', 
                           'visible_band': 'v'}
-        request_params = default_ex_params.copy()
+        request_params = {}
         expected_params = default_in_params.copy()
         
         for k, v in set_param.items():
