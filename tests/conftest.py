@@ -66,8 +66,9 @@ def set_env_var_plugin_config_file_path(conf_file):
 def live_nb2service(xprocess):
     wd = os.getcwd()
     class Starter(ProcessStarter):
-        pattern = ".*"
+        pattern = "Serving Flask app"
         timeout = 30
+        max_read_lines = 10000 
         terminate_on_interrupt = True
         args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
         def startup_check(self):
@@ -83,5 +84,5 @@ def live_nb2service(xprocess):
     except Exception as e:
         xprocess.getinfo("nb2service").terminate()
         raise e
-    yield 'http://localhost:9393'
+    yield 'http://localhost:9393/'
     xprocess.getinfo("nb2service").terminate()

@@ -48,7 +48,7 @@ jobs:
         python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "not fullstack" -sv --full-trace --log-cli-level=DEBUG 
     - name: Install dependencies for full stack testing
       run: |
-        pip install nb2workflow[service,rdf]
+        pip install -e git+https://github.com/oda-hub/nb2workflow.git[service,rdf]
         pip install oda_api
     - name: Test full stack
       run: |

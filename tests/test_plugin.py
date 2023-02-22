@@ -5,7 +5,7 @@ from oda_api.data_products import PictureProduct, ImageDataProduct
 import time
 import jwt
 import pytest
-from cdci_data_analysis.analysis.exceptions import RequestNotUnderstood
+from oda_api.api import RequestNotUnderstood
 
 logger = logging.getLogger(__name__)
 
@@ -312,26 +312,28 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
+# TODO: test unreachable kb
+
 
 @pytest.mark.fullstack
 @pytest.mark.parametrize("set_param, expect_param, wrong",
                          [({}, {}, False),
                           
                           ({'T_format': 'isot',
-                            'time_instance': '2019-09-19T12:00:0.000',
+                            'time_instant': '2019-09-19T12:00:0.000',
                             'T1': '2019-09-19T12:00:0.000',
                             'T2': '2019-09-20T12:00:0.000'}, 
-                           {'time_instance': '2019-09-19T12:00:0.000', 
-                            'T1': 58745.5, 'T2': 58746.5}, False),
+                           {'time_instant': '2019-09-19T12:00:0.000', 
+                            'start_time': 58745.5, 'end_time': 58746.5}, False),
                           
-                          ({'T_format': 'mjd', 'time_instance': 58745.5, 'T2': 58746.5}, 
-                           {'time_instance': '2019-09-19T12:00:0.000', 
-                            'T2': '2019-09-20T12:00:0.000'}, False),
+                          ({'T_format': 'mjd', 'time_instant': 58745.5, 'T2': 58746.5}, 
+                           {'time_instant': '2019-09-19T12:00:0.000', 
+                            'end_time': 58746.5}, False),
                           
                           ({'RA': 23.5, 'DEC': 33.3}, {'poi_ra': 23.5, 'poi_dec': 33.3}, False),
                           
-                          ({'energy': 500, 'band': 'b', 'free_energy': 1000, 'E_units': 'keV'}, 
-                           {'energy': 500, 'band': 'b', 'free_energy': 1.}, False),
+                          ({'energy': 500, 'band': 'b', 'radius': 1.2}, 
+                           {'energy': 500, 'band': 'b', 'radius': 1.2}, False),
                           
                           ({'visible_band': 'z'}, {'visible_band': 'z'}, True),
                           
