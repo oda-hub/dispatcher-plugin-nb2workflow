@@ -366,7 +366,7 @@ def test_full_stack(live_nb2service,
                           'RA': 10.0, 
                           'radius': 3.0, 
                           'T1': 56000.0, 
-                          'time_instance': '2017-08-17T12:43:0.000', 
+                          'time_instant': '2017-08-17T12:43:0.000', 
                           'visible_band': 'v',
                           'free_energy': 3.}
         default_in_params = {'band': 'z', 
@@ -376,7 +376,7 @@ def test_full_stack(live_nb2service,
                           'poi_ra': 10.0, 
                           'radius': 3.0, 
                           'start_time': 56000.0, 
-                          'time_instance': '2017-08-17T12:43:0.000', 
+                          'time_instant': '2017-08-17T12:43:0.000', 
                           'visible_band': 'v',
                           'free_energy': 3.}
         request_params = default_ex_params.copy()
