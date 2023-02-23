@@ -2,8 +2,23 @@ from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQ
 from cdci_data_analysis.analysis.parameters import Parameter, Name
 from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
 from .dataserver_dispatcher import NB2WDataDispatcher
+from cdci_data_analysis.analysis.ontology import Ontology
 import os
+from functools import lru_cache
+from json import dumps
 
+class HashableDict(dict):
+    def __hash__(self):
+        return hash(dumps(self))
+
+def with_hashable_dict(func):
+    def wrapper(backend_param_dict, ontology_path):
+        return func(HashableDict(backend_param_dict), ontology_path)
+    return wrapper
+
+
+@with_hashable_dict
+@lru_cache
 def construct_parameter_lists(backend_param_dict, ontology_path):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
@@ -15,8 +30,13 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
     plist = []
     source_plist = []
     for pname, pval in backend_param_dict.items():
-        if pval['owl_type'] in src_query_pars_uris.keys():
-            default_pname = src_query_pars_uris[pval['owl_type']]
+        onto = Ontology(ontology_path)
+        if pval.get("extra_ttl"):
+            onto.parse_extra_ttl(pval.get("extra_ttl"))
+        onto_class_hierarchy = onto.get_parameter_hierarchy(pval['owl_type'])
+        src_query_owl_uri_set = set(onto_class_hierarchy).intersection(src_query_pars_uris.keys())
+        if src_query_owl_uri_set:
+            default_pname = src_query_pars_uris[src_query_owl_uri_set.pop()]
             par_name_substitution[ default_pname ] = pname
             source_plist.append(Parameter.from_owl_uri(pval['owl_type'], 
                                                        value=pval['default_value'], 
@@ -77,8 +97,15 @@ class NB2WProductQuery(ProductQuery):
     def get_data_server_query(self, instrument, config=None, **kwargs):
         param_dict = {}
         for param_name in instrument.get_parameters_name_list():
-            param_dict[self.par_name_substitution.get(param_name, param_name)] = instrument.get_par_by_name(param_name).value
-        
+            param_instance = instrument.get_par_by_name(param_name)
+            bk_pname = self.par_name_substitution.get(param_name, param_name)
+            if getattr(param_instance, 'par_default_format'):
+                param_dict[bk_pname] = param_instance.get_value_in_default_format()
+            elif getattr(param_instance, 'default_units'):
+                param_dict[bk_pname] = param_instance.get_value_in_default_units()
+            else:
+                param_dict[bk_pname] = param_instance.value
+                
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
                                                 param_dict=param_dict,

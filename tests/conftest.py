@@ -8,17 +8,19 @@ from cdci_data_analysis.pytest_fixtures import (
 import pytest
 import json
 import os
+from xprocess import ProcessStarter
+import requests
 
 config_one_instrument = """    
 instruments:
   example0:
-    data_server_url: http://localhost:9393
+    data_server_url: http://localhost:9494
     dummy_cache: ""
 """
 
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
-    return ("127.0.0.1", 9393)
+    return ("127.0.0.1", 9494)
 
 @pytest.fixture
 def mock_backend(httpserver):
@@ -60,3 +62,27 @@ def set_env_var_plugin_config_file_path(conf_file):
     os.environ.clear()
     os.environ.update(old_environ)
     
+@pytest.fixture(scope="session")
+def live_nb2service(xprocess):
+    wd = os.getcwd()
+    class Starter(ProcessStarter):
+        pattern = "Serving Flask app"
+        timeout = 30
+        max_read_lines = 10000 
+        terminate_on_interrupt = True
+        args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
+        def startup_check(self):
+            try: 
+                res = requests.get('http://localhost:9393/')
+            except requests.ConnectionError:
+                return False
+            if res.status_code != 200:
+                return False
+            return res.json()['message'] == 'all is ok!'
+    try:
+        logfile = xprocess.ensure("nb2service", Starter)
+    except Exception as e:
+        xprocess.getinfo("nb2service").terminate()
+        raise e
+    yield 'http://localhost:9393/'
+    xprocess.getinfo("nb2service").terminate()
