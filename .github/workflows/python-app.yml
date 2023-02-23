@@ -46,9 +46,6 @@ jobs:
       run: |
         curl -o $ODA_ONTOLOGY_PATH https://raw.githubusercontent.com/oda-hub/dispatcher-app/ontology-parameters/tests/oda-ontology.ttl
         python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "not fullstack" -sv --full-trace --log-cli-level=DEBUG 
-    - name: Install dependencies for full stack testing
-      run: |
-        pip install -e git+https://github.com/oda-hub/nb2workflow.git#egg=nb2workflow[service,rdf]
     - name: Test full stack
       run: |
         python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "fullstack" -sv --full-trace --log-cli-level=DEBUG 
