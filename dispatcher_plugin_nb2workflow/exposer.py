@@ -32,7 +32,10 @@ def kg_select(t, kg_conf_dict):
 
     elif kg_conf_dict.get('type') == 'file':
         graph = rdf.Graph()
-        graph.parse(kg_conf_dict['path'])
+        if os.path.isfile(kg_conf_dict['path']):
+            graph.parse(kg_conf_dict['path'])
+        else:
+            logger.warning("Knowledge graph file %s doesn't exist yet. No instruments information will be loaded.")
         qres = graph.query(f"""
                         SELECT * WHERE {{
                             {t}
