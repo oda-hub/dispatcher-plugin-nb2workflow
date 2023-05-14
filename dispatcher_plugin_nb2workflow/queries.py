@@ -45,9 +45,14 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
                                                        extra_ttl=pval.get("extra_ttl")
                                                        ))
         else:
+            #if param name coincides with the SourceQuery default names, but it's not properly annotated, rename
+            cur_name = pname
+            if pname in src_query_pars_uris.values():
+                cur_name = pname + '_rename'
+                par_name_substitution[ cur_name ] = pname
             plist.append(Parameter.from_owl_uri(pval['owl_type'], 
                                                 value=pval['default_value'], 
-                                                name=pname,
+                                                name=cur_name,
                                                 ontology_path=ontology_path,
                                                 extra_ttl=pval.get("extra_ttl")
                                                 ))
@@ -96,8 +101,8 @@ class NB2WProductQuery(ProductQuery):
         
     def get_data_server_query(self, instrument, config=None, **kwargs):
         param_dict = {}
-        for param_name in instrument.get_parameters_name_list():
-            param_instance = instrument.get_par_by_name(param_name)
+        for param_name in instrument.get_parameters_name_list(prod_name = self.backend_product_name):
+            param_instance = instrument.get_par_by_name(param_name, prod_name = self.backend_product_name)
             bk_pname = self.par_name_substitution.get(param_name, param_name)
             if getattr(param_instance, 'par_default_format'):
                 param_dict[bk_pname] = param_instance.get_value_in_default_format()
