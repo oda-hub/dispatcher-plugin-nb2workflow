@@ -137,7 +137,7 @@ class NB2WPictureProduct(NB2WProduct):
     def get_html_draw(self):
         enc = self.dispatcher_data_prod.encode()
         b64_dat = enc["b64data"].replace("-", "+").replace("_", "/") 
-        return {'image': {'div': f'<br><img src="data:image/{enc["img_type"]};base64,{b64_dat}">', 
+        return {'image': {'div': f'<br><img src="data:image/{enc["img_type"]};base64,{b64_dat}" class="img-responsive">', 
                           'script': ''} }
 
 class NB2WAstropyTableProduct(NB2WProduct):
