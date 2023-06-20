@@ -84,6 +84,7 @@ class NB2WProductQuery(ProductQuery):
         parameter_lists = construct_parameter_lists(backend_param_dict, ontology_path)
         self.par_name_substitution = parameter_lists['par_name_substitution']
         plist = parameter_lists['prod_plist']
+        self.ontology_path = ontology_path
         super().__init__(name, parameters_list = plist)
     
     @classmethod
@@ -124,7 +125,7 @@ class NB2WProductQuery(ProductQuery):
             _o_dict = res.json() 
         else:
             _o_dict = res.json()['data']
-        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output'], out_dir) 
+        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output'], out_dir, self.ontology_path) 
         return prod_list
     
     def process_product_method(self, instrument, prod_list, api=False):

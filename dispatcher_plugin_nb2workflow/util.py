@@ -1,4 +1,20 @@
 from html.parser import HTMLParser
+from cdci_data_analysis.analysis.ontology import Ontology
+
+class ParprodOntology(Ontology):
+    def get_parprod_terms(self):
+        query = """
+            SELECT ?s WHERE {
+                ?s (rdfs:subClassOf|a)* ?mid0.
+                ?mid0 rdfs:subClassOf* oda:DataProduct. 
+
+                ?s (rdfs:subClassOf|a)* ?mid1.
+                ?mid1 rdfs:subClassOf* oda:WorkflowParameter .
+            }
+            GROUP BY ?s
+            """
+        qres = self.g.query(query)
+        return [str(row[0]) for row in qres]
 
 class AstropyTableViewParser(HTMLParser):
     def handle_starttag(self, tag, attrs):

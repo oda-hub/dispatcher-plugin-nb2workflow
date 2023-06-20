@@ -3,9 +3,12 @@ import os
 import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
+from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, PictureProduct
-from .util import AstropyTableViewParser
+from .util import AstropyTableViewParser, ParprodOntology
 from io import StringIO
+from functools import lru_cache  
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,15 +65,28 @@ class NB2WProduct:
         return [cls(encoded_data, *args, **kwargs)]
 
     @classmethod
-    def prod_list_factory(cls, output_description_dict, output, out_dir = None):
-        mapping = {x.type_key: x for x in cls.__subclasses__()}
+    def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
+        par_prod_classes = parameter_products_factory(ontology_path)
+        
+        mapping = {x.type_key: x for x in cls.__subclasses__()} 
         
         prod_list = []
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
+            
+            extra_kw = {}
+            extra_ttl = output_description_dict[key]['extra_ttl'] 
+            if extra_ttl == '\n': extra_ttl == None 
+            if extra_ttl:
+                extra_kw = {'extra_ttl': extra_ttl}
 
             try:
-                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], out_dir = out_dir, name = key) )
+                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], 
+                                                                           out_dir=out_dir, 
+                                                                           name=key, 
+                                                                           **extra_kw
+                                                                           ) 
+                                 )
             except Exception as e:
                 logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
 
@@ -84,6 +100,39 @@ class NB2WProduct:
             except json.decoder.JSONDecodeError:
                 pass
         return encoded_data
+
+class NB2WParameterProduct(NB2WProduct):
+    type_key = 'oda:WorkflowParameter'
+    
+    ontology_path = None
+    
+    def __init__(self, 
+                 value, 
+                 out_dir=None, 
+                 name='paramdata',
+                 extra_ttl=None):
+        self.name = name
+        self.parameter_obj = Parameter.from_owl_uri(owl_uri=self.type_key,
+                                                    extra_ttl=extra_ttl,
+                                                    ontology_path=self.ontology_path,
+                                                    value=value,
+                                                    name=name)
+    
+    def write(self):
+        pass
+    
+    def get_html_draw(self):
+        return {'image': {'div': '<br>'+self.parameter_obj.value, 'script': ''} }
+
+@lru_cache
+def parameter_products_factory(ontology_path = None):
+    classes = []
+    onto = ParprodOntology(ontology_path)
+    for term in onto.get_parprod_terms():
+        classes.append(type(f"{term.split('#')[-1]}Product", NB2WParameterProduct, {'type_key': term}))
+    return classes
+        
+
 class NB2WBinaryProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
