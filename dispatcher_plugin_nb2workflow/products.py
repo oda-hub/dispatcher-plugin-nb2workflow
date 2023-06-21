@@ -76,7 +76,7 @@ class NB2WProduct:
             
             extra_kw = {}
             extra_ttl = output_description_dict[key].get('extra_ttl')
-            if extra_ttl == '\n': extra_ttl == None 
+            if extra_ttl == '\n': extra_ttl = None 
             if extra_ttl:
                 extra_kw = {'extra_ttl': extra_ttl}
 
