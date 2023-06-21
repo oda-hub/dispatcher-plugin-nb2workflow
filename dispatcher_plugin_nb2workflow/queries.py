@@ -1,6 +1,11 @@
 from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, InstrumentQuery
 from cdci_data_analysis.analysis.parameters import Parameter, Name
-from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
+from .products import (NB2WProduct, 
+                       NB2WAstropyTableProduct, 
+                       NB2WBinaryProduct, 
+                       NB2WPictureProduct, 
+                       NB2WTextProduct, 
+                       NB2WParameterProduct)
 from .dataserver_dispatcher import NB2WDataDispatcher
 from cdci_data_analysis.analysis.ontology import Ontology
 import os
@@ -143,6 +148,8 @@ class NB2WProductQuery(ProductQuery):
                     bin_im_dp_list.append(product.dispatcher_data_prod) 
                 elif isinstance(product, NB2WTextProduct):
                     text_dp_list.append(product.dispatcher_data_prod)
+                elif isinstance(product, NB2WParameterProduct):
+                    text_dp_list.append(product.parameter_obj.value)
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
                     
@@ -155,7 +162,10 @@ class NB2WProductQuery(ProductQuery):
             prod_name_list, file_name_list, image_list = [], [], []
             for product in prod_list.prod_list:
                 product.write()
-                file_name_list.append(os.path.basename(product.file_path))
+                try:
+                    file_name_list.append(os.path.basename(product.file_path))
+                except AttributeError:
+                    pass
                 im = product.get_html_draw()
                 if im:
                     image_list.append(im)
@@ -165,7 +175,7 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
             
-            query_out.prod_dictionary['download_file_name'] = 'foo.tar.gz' # TODO:
+            query_out.prod_dictionary['download_file_name'] = 'product.tar.gz' # TODO:
             query_out.prod_dictionary['prod_process_message'] = ''
 
         return query_out

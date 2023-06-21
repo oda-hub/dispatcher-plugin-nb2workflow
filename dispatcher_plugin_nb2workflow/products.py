@@ -68,7 +68,7 @@ class NB2WProduct:
     def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
         par_prod_classes = parameter_products_factory(ontology_path)
         
-        mapping = {x.type_key: x for x in cls.__subclasses__()} 
+        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes} 
         
         prod_list = []
         for key in output_description_dict.keys():
@@ -122,14 +122,16 @@ class NB2WParameterProduct(NB2WProduct):
         pass
     
     def get_html_draw(self):
-        return {'image': {'div': '<br>'+self.parameter_obj.value, 'script': ''} }
+        return {'image': {'div': f'<br>{self.parameter_obj.value}', 'script': ''} }
 
 @lru_cache
 def parameter_products_factory(ontology_path = None):
     classes = []
     onto = ParprodOntology(ontology_path)
     for term in onto.get_parprod_terms():
-        classes.append(type(f"{term.split('#')[-1]}Product", NB2WParameterProduct, {'type_key': term}))
+        classes.append(type(f"{term.split('#')[-1]}Product", 
+                            (NB2WParameterProduct,), 
+                            {'type_key': term, 'ontology_path': ontology_path}))
     return classes
         
 
