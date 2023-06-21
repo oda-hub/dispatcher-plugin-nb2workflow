@@ -75,7 +75,7 @@ class NB2WProduct:
             owl_type = output_description_dict[key]['owl_type']
             
             extra_kw = {}
-            extra_ttl = output_description_dict[key]['extra_ttl'] 
+            extra_ttl = output_description_dict[key].get('extra_ttl')
             if extra_ttl == '\n': extra_ttl == None 
             if extra_ttl:
                 extra_kw = {'extra_ttl': extra_ttl}
