@@ -4,7 +4,7 @@ import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
-from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, PictureProduct
+from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
 from .util import AstropyTableViewParser, ParprodOntology
 from io import StringIO
 from functools import lru_cache  
@@ -30,13 +30,17 @@ class TableProduct(BaseQueryProduct):
             
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
         
-class NB2WProduct:
+class NB2WProduct:  # TODO: decide on the name precedence 
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
-        self.name = encoded_data.get('name', name)
+        self.name = name
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         numpy_data_prod = NumpyDataProduct.decode(encoded_data) # most products are NumpyDataProduct so default: 
                                                                 # we follow BaseQueryProduct implementation
+        if not numpy_data_prod.name:
+            numpy_data_prod.name = self.name
+        else:
+            self.name = numpy_data_prod.name
         self.dispatcher_data_prod = data_product_type(name = self.name, 
                                                      data= numpy_data_prod,
                                                      meta_data=metadata,
@@ -122,7 +126,7 @@ class NB2WParameterProduct(NB2WProduct):
         pass
     
     def get_html_draw(self):
-        return {'image': {'div': f'<br>{self.parameter_obj.value}', 'script': ''} }
+        return {'image': {'div': f'<br>value: {self.parameter_obj.value}<br>uri: {self.type_key}', 'script': ''} }
 
 @lru_cache
 def parameter_products_factory(ontology_path = None):
@@ -135,58 +139,59 @@ def parameter_products_factory(ontology_path = None):
     return classes
         
 
-class NB2WBinaryProduct(NB2WProduct):
+class NB2WBinaryProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
     def __init__(self, encoded_data, out_dir = None, name = 'bindata'):
         self.out_dir = out_dir
         self.name = name
-        self.dispatcher_data_prod = encoded_data
+        self.data_prod = BinaryProduct.decode(encoded_data)
     
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
-        bin_data = BinaryData().decode(self.dispatcher_data_prod)
-        with open(file_path, 'wb') as fd:
-            fd.write(bin_data)
+        self.data_prod.write_file(file_path)
         self.file_path = file_path
+        
 
-class NB2WTextProduct(NB2WProduct):
+class NB2WTextProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODATextProduct'
     
     def __init__(self, text_data, out_dir = None, name = 'text'):
         self.out_dir = out_dir
         self.name = name
-        self.dispatcher_data_prod = str(text_data)
+        self.data_prod = str(text_data)
         
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
         with open(file_path, 'w') as fd:
-            fd.write(self.dispatcher_data_prod)
+            fd.write(self.data_prod)
         self.file_path = file_path
         
     def get_html_draw(self):
-        return {'image': {'div': '<br>'+self.dispatcher_data_prod, 'script': ''} }
+        return {'image': {'div': '<br>'+self.data_prod, 'script': ''} }
 
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
     
     def __init__(self, encoded_data, out_dir = None, name = 'picture'):
+        self.name = name
         self.out_dir = out_dir
-        # NOTE: dispatcher_data_product is not a dispatcher class here (as well as in binary/text data). 
-        # Use oda_api prod directly
-        self.dispatcher_data_prod = PictureProduct.decode(encoded_data)
-        fname = getattr(self.dispatcher_data_prod, 'file_path', None)
+        self.data_prod = PictureProduct.decode(encoded_data)
+        if self.data_prod.name:
+            self.name = self.data_prod.name
+        else:
+            self.data_prod.name = self.name
+        fname = getattr(self.data_prod, 'file_path', None)
         if fname is None:
             fname = name
-        self.name = os.path.basename(fname)
 
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
-        self.dispatcher_data_prod.write_file(file_path)
+        self.data_prod.write_file(file_path)
         self.file_path = file_path
 
     def get_html_draw(self):
-        enc = self.dispatcher_data_prod.encode()
+        enc = self.data_prod.encode()
         b64_dat = enc["b64data"].replace("-", "+").replace("_", "/") 
         return {'image': {'div': f'<br><img src="data:image/{enc["img_type"]};base64,{b64_dat}" class="img-responsive">', 
                           'script': ''} }
@@ -195,10 +200,14 @@ class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
     def __init__(self, encoded_data, out_dir = None, name = 'astropy_table'):
-        self.name = encoded_data.get('name', name)
+        self.name = name
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         table_data_prod = ODAAstropyTable.decode(encoded_data)
+        if table_data_prod.name:
+            self.name = table_data_prod.name
+        else:
+            table_data_prod.name = self.name
         self.dispatcher_data_prod = TableProduct(name = self.name, 
                                                  table_data = table_data_prod,
                                                  meta_data=metadata,

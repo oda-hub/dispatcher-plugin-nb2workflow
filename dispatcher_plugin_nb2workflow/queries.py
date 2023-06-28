@@ -143,13 +143,15 @@ class NB2WProductQuery(ProductQuery):
                 if isinstance(product, NB2WAstropyTableProduct):
                     tab_dp_list.append(product.dispatcher_data_prod.table_data)
                 elif isinstance(product, NB2WBinaryProduct):
-                    bin_dp_list.append(product.dispatcher_data_prod)
+                    bin_dp_list.append(product.data_prod)
                 elif isinstance(product, NB2WPictureProduct):
-                    bin_im_dp_list.append(product.dispatcher_data_prod) 
+                    bin_im_dp_list.append(product.data_prod) 
                 elif isinstance(product, NB2WTextProduct):
-                    text_dp_list.append(product.dispatcher_data_prod)
+                    text_dp_list.append({'name': product.name, 'value': product.data_prod})
                 elif isinstance(product, NB2WParameterProduct):
-                    text_dp_list.append(product.parameter_obj.value)
+                    text_dp_list.append({'name': product.name, 
+                                         'value': product.parameter_obj.value, 
+                                         'meta_data': {'uri': product.type_key}})
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
                     
