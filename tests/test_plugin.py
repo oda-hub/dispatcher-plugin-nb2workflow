@@ -223,7 +223,8 @@ def test_text_product(dispatcher_live_fixture, mock_backend):
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
-    assert jdata['products']['text_product_list'][0] == ascii_rep
+    assert jdata['products']['text_product_list'][0]['name'] == 'text_output'
+    assert jdata['products']['text_product_list'][0]['value'] == ascii_rep
     
 def test_binimage_product(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
