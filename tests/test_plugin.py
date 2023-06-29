@@ -316,6 +316,7 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
 # TODO: test unreachable kb
 
 
+# apart from general end-to-end testing this also tests for issue #47 
 @pytest.mark.fullstack
 @pytest.mark.parametrize("set_param, expect_param, wrong",
                          [({}, {}, False),
@@ -389,8 +390,48 @@ def test_full_stack(live_nb2service,
                             product = "echo",
                             **request_params)
             
-            assert sorted_items(eval(res.echo_0)) == sorted_items(expected_params) 
+            assert sorted_items(eval(res.output_0.value)) == sorted_items(expected_params) 
         
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
+            
+            
+@pytest.mark.fullstack
+def test_parameter_output(live_nb2service,
+                          conf_file, 
+                          dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        from oda_api.api import DispatcherAPI
+        disp = DispatcherAPI(url=server)
+        prod = disp.get_product(instrument = "example", product = "paramout")
+        
+        names = [x['prod_name'] for x in prod.as_list()]
+        restup = [(getattr(prod, x).name, getattr(prod, x).value, getattr(prod, x).meta_data['uri']) for x in names]
+        
+        assert restup == [('flout', 4.2, 'http://odahub.io/ontology#Float'),
+                          ('intout', 4, 'http://odahub.io/ontology#Integer'),
+                          ('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
+                          ('timeinst', 56457.0, 'http://odahub.io/ontology#TimeInstantMJD'),
+                          ('timeisot',
+                          '2022-10-09T13:00:00.000',
+                          'http://odahub.io/ontology#TimeInstantISOT'),
+                          ('wrng', 'FOO', 'http://odahub.io/ontology#PhotometricBand')]
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+            
