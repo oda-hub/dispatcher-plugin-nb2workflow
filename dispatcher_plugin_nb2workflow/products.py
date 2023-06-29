@@ -5,7 +5,7 @@ import json
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
-from .util import AstropyTableViewParser, ParprodOntology
+from .util import AstropyTableViewParser, ParProdOntology
 from io import StringIO
 from functools import lru_cache  
 
@@ -131,7 +131,7 @@ class NB2WParameterProduct(NB2WProduct):
 @lru_cache
 def parameter_products_factory(ontology_path = None):
     classes = []
-    onto = ParprodOntology(ontology_path)
+    onto = ParProdOntology(ontology_path)
     for term in onto.get_parprod_terms():
         classes.append(type(f"{term.split('#')[-1]}Product", 
                             (NB2WParameterProduct,), 

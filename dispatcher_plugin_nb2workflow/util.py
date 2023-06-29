@@ -1,7 +1,7 @@
 from html.parser import HTMLParser
 from cdci_data_analysis.analysis.ontology import Ontology
 
-class ParprodOntology(Ontology):
+class ParProdOntology(Ontology):
     def get_parprod_terms(self):
         query = """
             SELECT ?s WHERE {
