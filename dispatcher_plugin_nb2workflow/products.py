@@ -3,9 +3,12 @@ import os
 import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
-from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryData, PictureProduct
-from .util import AstropyTableViewParser
+from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
+from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
+from .util import AstropyTableViewParser, ParProdOntology
 from io import StringIO
+from functools import lru_cache  
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +30,17 @@ class TableProduct(BaseQueryProduct):
             
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
         
-class NB2WProduct:
+class NB2WProduct:  # TODO: decide on the name precedence 
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
-        self.name = encoded_data.get('name', name)
+        self.name = name
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         numpy_data_prod = NumpyDataProduct.decode(encoded_data) # most products are NumpyDataProduct so default: 
                                                                 # we follow BaseQueryProduct implementation
+        if not numpy_data_prod.name:
+            numpy_data_prod.name = self.name
+        else:
+            self.name = numpy_data_prod.name
         self.dispatcher_data_prod = data_product_type(name = self.name, 
                                                      data= numpy_data_prod,
                                                      meta_data=metadata,
@@ -62,15 +69,28 @@ class NB2WProduct:
         return [cls(encoded_data, *args, **kwargs)]
 
     @classmethod
-    def prod_list_factory(cls, output_description_dict, output, out_dir = None):
-        mapping = {x.type_key: x for x in cls.__subclasses__()}
+    def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
+        par_prod_classes = parameter_products_factory(ontology_path)
+        
+        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes} 
         
         prod_list = []
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
+            
+            extra_kw = {}
+            extra_ttl = output_description_dict[key].get('extra_ttl')
+            if extra_ttl == '\n': extra_ttl = None 
+            if extra_ttl:
+                extra_kw = {'extra_ttl': extra_ttl}
 
             try:
-                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], out_dir = out_dir, name = key) )
+                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], 
+                                                                           out_dir=out_dir, 
+                                                                           name=key, 
+                                                                           **extra_kw
+                                                                           ) 
+                                 )
             except Exception as e:
                 logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
 
@@ -84,58 +104,94 @@ class NB2WProduct:
             except json.decoder.JSONDecodeError:
                 pass
         return encoded_data
-class NB2WBinaryProduct(NB2WProduct):
+
+class NB2WParameterProduct(NB2WProduct):
+    type_key = 'oda:WorkflowParameter'
+    
+    ontology_path = None
+    
+    def __init__(self, 
+                 value, 
+                 out_dir=None, 
+                 name='paramdata',
+                 extra_ttl=None):
+        self.name = name
+        self.parameter_obj = Parameter.from_owl_uri(owl_uri=self.type_key,
+                                                    extra_ttl=extra_ttl,
+                                                    ontology_path=self.ontology_path,
+                                                    value=value,
+                                                    name=name)
+    
+    def write(self):
+        pass
+    
+    def get_html_draw(self):
+        return {'image': {'div': f'<br>value: {self.parameter_obj.value}<br>uri: {self.type_key}', 'script': ''} }
+
+@lru_cache
+def parameter_products_factory(ontology_path = None):
+    classes = []
+    onto = ParProdOntology(ontology_path)
+    for term in onto.get_parprod_terms():
+        classes.append(type(f"{term.split('#')[-1]}Product", 
+                            (NB2WParameterProduct,), 
+                            {'type_key': term, 'ontology_path': ontology_path}))
+    return classes
+        
+
+class NB2WBinaryProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
     def __init__(self, encoded_data, out_dir = None, name = 'bindata'):
         self.out_dir = out_dir
         self.name = name
-        self.dispatcher_data_prod = encoded_data
+        self.data_prod = BinaryProduct.decode(encoded_data)
     
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
-        bin_data = BinaryData().decode(self.dispatcher_data_prod)
-        with open(file_path, 'wb') as fd:
-            fd.write(bin_data)
+        self.data_prod.write_file(file_path)
         self.file_path = file_path
+        
 
-class NB2WTextProduct(NB2WProduct):
+class NB2WTextProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODATextProduct'
     
     def __init__(self, text_data, out_dir = None, name = 'text'):
         self.out_dir = out_dir
         self.name = name
-        self.dispatcher_data_prod = str(text_data)
+        self.data_prod = str(text_data)
         
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
         with open(file_path, 'w') as fd:
-            fd.write(self.dispatcher_data_prod)
+            fd.write(self.data_prod)
         self.file_path = file_path
         
     def get_html_draw(self):
-        return {'image': {'div': '<br>'+self.dispatcher_data_prod, 'script': ''} }
+        return {'image': {'div': '<br>'+self.data_prod, 'script': ''} }
 
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
     
     def __init__(self, encoded_data, out_dir = None, name = 'picture'):
+        self.name = name
         self.out_dir = out_dir
-        # NOTE: dispatcher_data_product is not a dispatcher class here (as well as in binary/text data). 
-        # Use oda_api prod directly
-        self.dispatcher_data_prod = PictureProduct.decode(encoded_data)
-        fname = getattr(self.dispatcher_data_prod, 'file_path', None)
+        self.data_prod = PictureProduct.decode(encoded_data)
+        if self.data_prod.name:
+            self.name = self.data_prod.name
+        else:
+            self.data_prod.name = self.name
+        fname = getattr(self.data_prod, 'file_path', None)
         if fname is None:
             fname = name
-        self.name = os.path.basename(fname)
 
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
-        self.dispatcher_data_prod.write_file(file_path)
+        self.data_prod.write_file(file_path)
         self.file_path = file_path
 
     def get_html_draw(self):
-        enc = self.dispatcher_data_prod.encode()
+        enc = self.data_prod.encode()
         b64_dat = enc["b64data"].replace("-", "+").replace("_", "/") 
         return {'image': {'div': f'<br><img src="data:image/{enc["img_type"]};base64,{b64_dat}" class="img-responsive">', 
                           'script': ''} }
@@ -144,10 +200,14 @@ class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
     def __init__(self, encoded_data, out_dir = None, name = 'astropy_table'):
-        self.name = encoded_data.get('name', name)
+        self.name = name
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         table_data_prod = ODAAstropyTable.decode(encoded_data)
+        if table_data_prod.name:
+            self.name = table_data_prod.name
+        else:
+            table_data_prod.name = self.name
         self.dispatcher_data_prod = TableProduct(name = self.name, 
                                                  table_data = table_data_prod,
                                                  meta_data=metadata,

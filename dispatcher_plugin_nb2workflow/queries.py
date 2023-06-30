@@ -1,6 +1,11 @@
 from cdci_data_analysis.analysis.queries import ProductQuery, QueryOutput, BaseQuery, InstrumentQuery
 from cdci_data_analysis.analysis.parameters import Parameter, Name
-from .products import NB2WProduct, NB2WAstropyTableProduct, NB2WBinaryProduct, NB2WPictureProduct, NB2WTextProduct
+from .products import (NB2WProduct, 
+                       NB2WAstropyTableProduct, 
+                       NB2WBinaryProduct, 
+                       NB2WPictureProduct, 
+                       NB2WTextProduct, 
+                       NB2WParameterProduct)
 from .dataserver_dispatcher import NB2WDataDispatcher
 from cdci_data_analysis.analysis.ontology import Ontology
 import os
@@ -84,6 +89,7 @@ class NB2WProductQuery(ProductQuery):
         parameter_lists = construct_parameter_lists(backend_param_dict, ontology_path)
         self.par_name_substitution = parameter_lists['par_name_substitution']
         plist = parameter_lists['prod_plist']
+        self.ontology_path = ontology_path
         super().__init__(name, parameters_list = plist)
     
     @classmethod
@@ -124,7 +130,7 @@ class NB2WProductQuery(ProductQuery):
             _o_dict = res.json() 
         else:
             _o_dict = res.json()['data']
-        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output'], out_dir) 
+        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output'], out_dir, self.ontology_path) 
         return prod_list
     
     def process_product_method(self, instrument, prod_list, api=False):
@@ -137,11 +143,15 @@ class NB2WProductQuery(ProductQuery):
                 if isinstance(product, NB2WAstropyTableProduct):
                     tab_dp_list.append(product.dispatcher_data_prod.table_data)
                 elif isinstance(product, NB2WBinaryProduct):
-                    bin_dp_list.append(product.dispatcher_data_prod)
+                    bin_dp_list.append(product.data_prod)
                 elif isinstance(product, NB2WPictureProduct):
-                    bin_im_dp_list.append(product.dispatcher_data_prod) 
+                    bin_im_dp_list.append(product.data_prod) 
                 elif isinstance(product, NB2WTextProduct):
-                    text_dp_list.append(product.dispatcher_data_prod)
+                    text_dp_list.append({'name': product.name, 'value': product.data_prod})
+                elif isinstance(product, NB2WParameterProduct):
+                    text_dp_list.append({'name': product.name, 
+                                         'value': product.parameter_obj.value, 
+                                         'meta_data': {'uri': product.type_key}})
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
                     
@@ -154,7 +164,10 @@ class NB2WProductQuery(ProductQuery):
             prod_name_list, file_name_list, image_list = [], [], []
             for product in prod_list.prod_list:
                 product.write()
-                file_name_list.append(os.path.basename(product.file_path))
+                try:
+                    file_name_list.append(os.path.basename(product.file_path))
+                except AttributeError:
+                    pass
                 im = product.get_html_draw()
                 if im:
                     image_list.append(im)
@@ -164,7 +177,7 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
             
-            query_out.prod_dictionary['download_file_name'] = 'foo.tar.gz' # TODO:
+            query_out.prod_dictionary['download_file_name'] = 'product.tar.gz' # TODO:
             query_out.prod_dictionary['prod_process_message'] = ''
 
         return query_out
