@@ -174,7 +174,8 @@ def test_pass_comment(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'lightcurve',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -196,7 +197,8 @@ def test_table_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'table',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -217,7 +219,8 @@ def test_text_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'ascii_binary',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -235,7 +238,8 @@ def test_binimage_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'ascii_binary',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -254,7 +258,8 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'image',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
