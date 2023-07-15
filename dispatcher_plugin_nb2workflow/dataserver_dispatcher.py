@@ -148,7 +148,7 @@ class NB2WDataDispatcher:
                                        token=qpars['token']), doseq=True)
                 
                 if self.external_disp_url is not None:
-                    basepath = '/'.join([self.external_disp_url.rstrip('/'), 'download_products'])
+                    basepath = '/'.join([self.external_disp_url.rstrip('/'), 'dispatch-data/download_products'])
                 else:
                     basepath = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_products')}"
                 
