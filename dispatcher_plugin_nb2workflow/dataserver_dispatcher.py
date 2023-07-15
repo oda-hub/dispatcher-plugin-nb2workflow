@@ -22,6 +22,14 @@ class NB2WDataDispatcher:
         self.task = task
         self.param_dict = param_dict
         self.backend_options = self.query_backend_options()
+        
+        self.external_disp_url = None 
+        if not isinstance(instrument, str): # TODO: seems this is always the case. But what if not?
+            products_url_config = instrument.disp_conf.products_url
+            parsed = urlsplit(products_url_config)
+            if parsed.scheme and parsed.netloc:
+                self.external_disp_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+        
             
     def query_backend_options(self):
         url = self.data_server_url.strip('/') + '/api/v1.0/options'
@@ -139,7 +147,12 @@ class NB2WDataDispatcher:
                                        instrument=qpars['instrument_name'],
                                        token=qpars['token']), doseq=True)
                 
-                download_url = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_products')}?{dpars}"
+                if self.external_disp_url is not None:
+                    basepath = '/'.join([self.external_disp_url.rstrip('/'), 'download_products'])
+                else:
+                    basepath = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_products')}"
+                
+                download_url = f"{basepath}?{dpars}"
                 
                 wdir = glob(f"scratch_sid_{qpars['session_id'][0]}_jid_{qpars['job_id'][0]}*")
                 fpath = os.path.join(wdir[0], nb_html_fn)
