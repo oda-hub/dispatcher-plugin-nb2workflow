@@ -8,7 +8,8 @@ from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProdu
 from .util import AstropyTableViewParser, ParProdOntology
 from io import StringIO
 from functools import lru_cache  
-
+from mimetypes import guess_extension
+from magic import from_buffer as mime_from_buffer
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class NB2WProduct:  # TODO: decide on the name precedence
                                                      data= numpy_data_prod,
                                                      meta_data=metadata,
                                                      file_dir = out_dir,
-                                                     file_name = f"{self.name}")
+                                                     file_name = f"{self.name}.fits")
     
     def write(self):
         file_path = self.dispatcher_data_prod.file_path
@@ -146,9 +147,12 @@ class NB2WBinaryProduct(NB2WProduct):
         self.out_dir = out_dir
         self.name = name
         self.data_prod = BinaryProduct.decode(encoded_data)
+        self.mime_type = mime_from_buffer(self.data_prod.bin_data, mime=True)
     
     def write(self):
-        file_path = os.path.join(self.out_dir, self.name)
+        ext = guess_extension(self.mime_type, strict=False)
+        if ext is None: ext = ''
+        file_path = os.path.join(self.out_dir, f"{self.name}{ext}")
         self.data_prod.write_file(file_path)
         self.file_path = file_path
         
@@ -181,12 +185,9 @@ class NB2WPictureProduct(NB2WProduct):
             self.name = self.data_prod.name
         else:
             self.data_prod.name = self.name
-        fname = getattr(self.data_prod, 'file_path', None)
-        if fname is None:
-            fname = name
 
     def write(self):
-        file_path = os.path.join(self.out_dir, self.name)
+        file_path = os.path.join(self.out_dir, f"{self.name}.{self.data_prod.img_type}")
         self.data_prod.write_file(file_path)
         self.file_path = file_path
 
