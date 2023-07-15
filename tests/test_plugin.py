@@ -6,6 +6,9 @@ import time
 import jwt
 import pytest
 from oda_api.api import RequestNotUnderstood
+import re
+import gzip
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +177,8 @@ def test_pass_comment(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'lightcurve',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -196,7 +200,8 @@ def test_table_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'table',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -217,7 +222,8 @@ def test_text_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'ascii_binary',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -235,7 +241,8 @@ def test_binimage_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'ascii_binary',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -254,7 +261,8 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
                               'query_status': 'new',
                               'query_type': 'Real',
                               'product_type': 'image',
-                              'api': 'True'})
+                              'api': 'True',
+                              'run_asynch': 'False'})
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
@@ -434,4 +442,54 @@ def test_parameter_output(live_nb2service,
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
-            
+
+@pytest.mark.fullstack
+def test_failed_nbhtml_download(live_nb2service, 
+                                conf_file, 
+                                dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        for i in range(10):
+            c = requests.get(server + "/run_analysis",
+                             params = {'instrument': 'example',
+                                       'query_status': 'new',
+                                       'query_type': 'Real',
+                                       'product_type': 'failing',
+                                      })
+            assert c.status_code == 200
+            jdata = c.json()        
+            if jdata['job_status'] == 'failed':
+                break
+            time.sleep(10) 
+
+        assert 'download_products' in jdata['exit_status']['message']        
+        downlink = re.search('href="([^\"]*)\"',
+                             jdata['exit_status']['message']).groups()[-1]
+        
+        c = requests.get(downlink)
+        assert c.status_code == 200
+        try:
+            with open('out_nb.html', 'wb') as fd:
+                fd.write(gzip.decompress(c.content))
+            with open('out_nb.html', 'rt') as fd:
+                tcont = fd.read()
+                assert '<html>' in tcont
+                assert 'body class="jp-Notebook"' in tcont
+        finally:
+            os.remove('out_nb.html')
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)

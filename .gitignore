@@ -7,3 +7,4 @@ dispatcher_plugin_nb2workflow/config_dir/data_server_conf.yml
 .env
 **.nb2workflow**
 function.xml
+download_*
