@@ -176,8 +176,10 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['file_name'] = file_name_list
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
-            
-            query_out.prod_dictionary['download_file_name'] = 'product.tar.gz' # TODO:
+            if len(file_name_list) == 1:
+                query_out.prod_dictionary['download_file_name'] = f'{file_name_list[0]}.gz'
+            else:
+                query_out.prod_dictionary['download_file_name'] = f'{self.backend_product_name}.tar.gz' 
             query_out.prod_dictionary['prod_process_message'] = ''
 
         return query_out
