@@ -146,7 +146,7 @@ class NB2WDataDispatcher:
                 with open(fpath, 'wb') as fd:
                     fd.write(tres.content)
                 
-                except_message += f'\n<br><a target=_blanc href="{download_url}>Inspect notebook</a>">'
+                except_message += f'\n<br><a target=_blanc href="{download_url}">Inspect notebook</a>'
                                                            
                 query_out.set_failed('Backend exception', 
                                     message='Backend failed. ' + except_message,
