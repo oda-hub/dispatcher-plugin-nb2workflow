@@ -9,6 +9,7 @@ from oda_api.api import RequestNotUnderstood
 import re
 import gzip
 import os
+from magic import from_buffer as mime_from_buffer
 
 logger = logging.getLogger(__name__)
 
@@ -480,15 +481,10 @@ def test_failed_nbhtml_download(live_nb2service,
         
         c = requests.get(downlink)
         assert c.status_code == 200
-        try:
-            with open('out_nb.html', 'wb') as fd:
-                fd.write(gzip.decompress(c.content))
-            with open('out_nb.html', 'rt') as fd:
-                tcont = fd.read()
-                assert '<html>' in tcont
-                assert 'body class="jp-Notebook"' in tcont
-        finally:
-            os.remove('out_nb.html')
+
+        htmlcont = gzip.decompress(c.content)
+        assert mime_from_buffer(htmlcont, mime=True) == 'text/html'
+        assert 'body class="jp-Notebook"' in htmlcont.decode()
         
     finally:
         with open(conf_file, 'w') as fd:
