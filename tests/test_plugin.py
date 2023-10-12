@@ -389,6 +389,7 @@ def test_full_stack(live_nb2service,
         
         from oda_api.api import DispatcherAPI
         disp = DispatcherAPI(url=server)
+        disp.timeout = 300
         if wrong:
             with pytest.raises(RequestNotUnderstood):
                 disp.get_product(instrument = "example",
