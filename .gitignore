@@ -10,3 +10,4 @@ function.xml
 download_*
 /venv
 /.idea
+/build
