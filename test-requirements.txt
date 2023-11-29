@@ -1,3 +1,2 @@
 -e git+https://github.com/oda-hub/nb2workflow.git#egg=nb2workflow[service,rdf]
 -e git+https://github.com/oda-hub/oda_api.git@naming#egg=oda_api
--e git+https://github.com/oda-hub/dispatcher-app.git#egg=cdci_data_analysis[test]
