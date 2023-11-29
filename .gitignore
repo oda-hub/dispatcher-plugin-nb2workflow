@@ -9,3 +9,4 @@ dispatcher_plugin_nb2workflow/config_dir/data_server_conf.yml
 function.xml
 download_*
 /venv
+/.idea
