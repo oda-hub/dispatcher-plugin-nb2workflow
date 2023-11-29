@@ -98,6 +98,14 @@ class NB2WDataDispatcher:
         query_out.set_done('input products check skipped')
         return query_out, []
 
+    def get_progress_run(self):
+
+        query_out = QueryOutput()
+
+        p_value = {}
+
+        return p_value, query_out
+
     def run_query(self,
                   call_back_url = None,
                   run_asynch = True,
