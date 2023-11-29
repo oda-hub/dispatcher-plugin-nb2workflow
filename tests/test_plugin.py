@@ -490,3 +490,22 @@ def test_failed_nbhtml_download(live_nb2service,
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
+
+
+def test_return_progress(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/run_analysis",
+                     params={'instrument': 'example0',
+                             'query_status': 'new',
+                             'query_type': 'Real',
+                             'product_type': 'lightcurve',
+                             'api': 'True',
+                             'run_asynch': 'False',
+                             'return_progress': True})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
