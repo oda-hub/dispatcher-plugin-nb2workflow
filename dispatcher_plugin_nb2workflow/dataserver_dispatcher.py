@@ -101,6 +101,7 @@ class NB2WDataDispatcher:
     def get_progress_run(self, **kwargs):
 
         query_out = QueryOutput()
+        res_trace = None
 
         task = kwargs.get('task', self.task)
         param_dict = kwargs.get('param_dict', self.param_dict)
@@ -111,11 +112,9 @@ class NB2WDataDispatcher:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
 
-        p_value = {}
-
         url = os.path.join(self.data_server_url, 'api/v1.0/get', task.strip('/'))
         res = requests.get(url, params=param_dict)
-        if res.status_code == 200:
+        if res.status_code in [201, 201]:
             res_data = res.json()
             resroot = res_data['data'] if run_asynch else res_data
             jobdir = resroot['jobdir'].split('/')[-1]
@@ -123,11 +122,20 @@ class NB2WDataDispatcher:
             workflow_status = resroot['workflow_status']
             if workflow_status == 'started' or workflow_status == 'done':
                 trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
-                tres = requests.get(trace_url)
+                res_trace = requests.get(trace_url)
 
+            query_out.set_status(0, job_status=workflow_status)
+        else:
+            try:
+                query_out.set_failed('Error in the backend',
+                                     message='connection status code: ' + str(res.status_code),
+                                     extra_message=res.json()['exceptions'][0])
+            except:
+                query_out.set_failed('Error in the backend',
+                                     message='connection status code: ' + str(res.status_code),
+                                     extra_message=res.text)
 
-
-        return p_value, query_out
+        return res_trace, query_out
 
     def run_query(self,
                   call_back_url = None,
