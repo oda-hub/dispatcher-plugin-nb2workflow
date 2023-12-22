@@ -5,7 +5,8 @@ from .products import (NB2WProduct,
                        NB2WBinaryProduct, 
                        NB2WPictureProduct, 
                        NB2WTextProduct, 
-                       NB2WParameterProduct)
+                       NB2WParameterProduct,
+                       NB2WProgressProduct)
 from .dataserver_dispatcher import NB2WDataDispatcher
 from cdci_data_analysis.analysis.ontology import Ontology
 import os
@@ -122,22 +123,29 @@ class NB2WProductQuery(ProductQuery):
                                                 param_dict=param_dict,
                                                 task=self.backend_product_name) 
     
-    def build_product_list(self, instrument, res, out_dir, api=False):
+    def build_product_list(self, instrument, res, out_dir, api=False, return_progress=False):
         prod_list = []
+        _output = None
         if out_dir is None:
             out_dir = './'
-        if 'output' in res.json().keys(): # in synchronous mode
-            _o_dict = res.json() 
+        if not return_progress:
+            if 'output' in res.json().keys(): # in synchronous mode
+                _o_dict = res.json()
+            else:
+                _o_dict = res.json()['data']
+            _output = _o_dict['output']
+            prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _output, out_dir, self.ontology_path)
         else:
-            _o_dict = res.json()['data']
-        prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _o_dict['output'], out_dir, self.ontology_path) 
+            _o_text = res.content.decode()
+            prod_list.append(NB2WProgressProduct(_o_text, out_dir))
+
         return prod_list
     
     def process_product_method(self, instrument, prod_list, api=False):
         query_out = QueryOutput()
         
         
-        np_dp_list, bin_dp_list, tab_dp_list, bin_im_dp_list, text_dp_list = [], [], [], [], []
+        np_dp_list, bin_dp_list, tab_dp_list, bin_im_dp_list, text_dp_list, progress_dp_list = [], [], [], [], [], []
         if api is True:
             for product in prod_list.prod_list:
                 if isinstance(product, NB2WAstropyTableProduct):
@@ -152,6 +160,9 @@ class NB2WProductQuery(ProductQuery):
                     text_dp_list.append({'name': product.name, 
                                          'value': product.parameter_obj.value, 
                                          'meta_data': {'uri': product.type_key}})
+                elif isinstance(product, NB2WProgressProduct):
+                    progress_dp_list.append({'name': product.name,
+                                             'value': product.progress_data})
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
                     
@@ -160,6 +171,7 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['binary_data_product_list'] = bin_dp_list
             query_out.prod_dictionary['binary_image_product_list'] = bin_im_dp_list
             query_out.prod_dictionary['text_product_list'] = text_dp_list
+            query_out.prod_dictionary['progress_product_list'] = progress_dp_list
         else:
             prod_name_list, file_name_list, image_list = [], [], []
             for product in prod_list.prod_list:

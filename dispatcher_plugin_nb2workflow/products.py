@@ -78,19 +78,19 @@ class NB2WProduct:  # TODO: decide on the name precedence
         prod_list = []
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
-            
+
             extra_kw = {}
             extra_ttl = output_description_dict[key].get('extra_ttl')
-            if extra_ttl == '\n': extra_ttl = None 
+            if extra_ttl == '\n': extra_ttl = None
             if extra_ttl:
                 extra_kw = {'extra_ttl': extra_ttl}
 
             try:
-                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], 
-                                                                           out_dir=out_dir, 
-                                                                           name=key, 
+                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key],
+                                                                           out_dir=out_dir,
+                                                                           name=key,
                                                                            **extra_kw
-                                                                           ) 
+                                                                           )
                                  )
             except Exception as e:
                 logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
@@ -173,6 +173,27 @@ class NB2WTextProduct(NB2WProduct):
         
     def get_html_draw(self):
         return {'image': {'div': '<br>'+self.data_prod, 'script': ''} }
+
+
+class NB2WProgressProduct(NB2WProduct):
+    # TODO to be adapted
+    type_key = 'http://odahub.io/ontology#ODAProgressProduct'
+
+    def __init__(self, progress_html_data, out_dir=None, name='progress'):
+        self.out_dir = out_dir
+        self.name = name
+        self.progress_data = progress_html_data
+
+    def write(self):
+        file_path = os.path.join(self.out_dir, self.name)
+        with open(file_path, 'w') as fd:
+            fd.write(self.progress_data)
+        self.file_path = file_path
+
+    def get_html_draw(self):
+        # TODO not sure is correct, to verify
+        return {'image': {'div': '<br>' + self.progress_data, 'script': ''}}
+
 
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
