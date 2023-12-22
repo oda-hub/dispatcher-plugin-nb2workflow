@@ -123,12 +123,13 @@ class NB2WProductQuery(ProductQuery):
                                                 param_dict=param_dict,
                                                 task=self.backend_product_name) 
     
-    def build_product_list(self, instrument, res, out_dir, api=False, return_progress=False):
+    def build_product_list(self, instrument, res, out_dir, api=False):
         prod_list = []
         _output = None
         if out_dir is None:
             out_dir = './'
-        if not return_progress:
+        res_content_type = res.headers.get('content-type', None)
+        if res_content_type is not None and res_content_type == 'application/json':
             if 'output' in res.json().keys(): # in synchronous mode
                 _o_dict = res.json()
             else:
