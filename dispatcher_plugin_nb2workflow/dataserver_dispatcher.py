@@ -106,7 +106,7 @@ class NB2WDataDispatcher:
         task = kwargs.get('task', self.task)
         param_dict = kwargs.get('param_dict', self.param_dict)
 
-        run_asynch = kwargs.get('run_async', None)
+        run_asynch = kwargs.get('run_asynch', None)
         call_back_url = kwargs.get('call_back_url', None)
         if run_asynch is not None and run_asynch and call_back_url is not None:
             param_dict['_async_request_callback'] = call_back_url
@@ -114,12 +114,12 @@ class NB2WDataDispatcher:
 
         url = os.path.join(self.data_server_url, 'api/v1.0/get', task.strip('/'))
         res = requests.get(url, params=param_dict)
-        if res.status_code in [201, 201]:
+        if res.status_code in [200, 201]:
             res_data = res.json()
             resroot = res_data['data'] if run_asynch else res_data
             jobdir = resroot['jobdir'].split('/')[-1]
 
-            workflow_status = resroot['workflow_status']
+            workflow_status = resroot['workflow_status'] if run_asynch else 'done'
             if workflow_status == 'started' or workflow_status == 'done':
                 trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
                 res_trace = requests.get(trace_url)
