@@ -492,18 +492,21 @@ def test_failed_nbhtml_download(live_nb2service,
             fd.write(conf_bk)
 
 
-def test_return_progress(dispatcher_live_fixture, mock_backend):
+@pytest.mark.parametrize("run_asynch", [True, False])
+def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
 
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'api': 'True',
+              'run_asynch': run_asynch,
+              'return_progress': True}
+
     c = requests.get(server + "/run_analysis",
-                     params={'instrument': 'example0',
-                             'query_status': 'new',
-                             'query_type': 'Real',
-                             'product_type': 'lightcurve',
-                             'api': 'True',
-                             'run_asynch': 'False',
-                             'return_progress': True})
+                     params=params)
     logger.info("content: %s", c.text)
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))

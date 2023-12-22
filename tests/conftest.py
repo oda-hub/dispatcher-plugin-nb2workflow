@@ -10,6 +10,11 @@ import json
 import os
 from xprocess import ProcessStarter
 import requests
+from urllib.parse import urlparse, parse_qs
+from werkzeug.wrappers import Request
+from werkzeug.wrappers import Response
+
+from pytest_httpserver.httpserver import MappingQueryMatcher
 
 config_one_instrument = """    
 instruments:
@@ -18,9 +23,27 @@ instruments:
     dummy_cache: ""
 """
 
+
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
     return ("127.0.0.1", 9494)
+
+
+def lightcurve_handler(request: Request):
+    parsed_request_query = parse_qs(urlparse(request.url).query)
+    async_request = parsed_request_query.get('_async_request', ['no'])
+    responses_path = os.path.join(os.path.dirname(__file__), 'responses')
+    if async_request[0] == 'yes':
+        with open(os.path.join(responses_path, 'lightcurve_async.json'), 'r') as fd:
+            runjson_async = json.loads(fd.read())
+        response_data = json.dumps(runjson_async, indent=4)
+        return Response(response_data, status=200, content_type='application/json')
+    else:
+        with open(os.path.join(responses_path, 'lightcurve.json'), 'r') as fd:
+            runjson = json.loads(fd.read())
+        response_data = json.dumps(runjson, indent=4)
+        return Response(response_data, status=200, content_type='application/json')
+
 
 @pytest.fixture
 def mock_backend(httpserver):
@@ -29,6 +52,8 @@ def mock_backend(httpserver):
         respjson = json.loads(fd.read())
     with open(os.path.join(responses_path, 'lightcurve.json'), 'r') as fd:
         runjson = json.loads(fd.read())
+    with open(os.path.join(responses_path, 'lightcurve_async.json'), 'r') as fd:
+        runjson_async = json.loads(fd.read())
     with open(os.path.join(responses_path, 'table.json'), 'r') as fd:
         table_json = json.loads(fd.read())
     with open(os.path.join(responses_path, 'ascii_binary.json'), 'r') as fd:
@@ -40,7 +65,8 @@ def mock_backend(httpserver):
         
     httpserver.expect_request('/').respond_with_data('')    
     httpserver.expect_request(f'/api/v1.0/options').respond_with_json(respjson)
-    httpserver.expect_request(f'/api/v1.0/get/lightcurve').respond_with_json(runjson)
+    # TODO this approach is used because with query_string I could not make it work they way I wanted
+    httpserver.expect_request(f'/api/v1.0/get/lightcurve').respond_with_handler(lightcurve_handler)
     httpserver.expect_request(f'/api/v1.0/get/table').respond_with_json(table_json)
     httpserver.expect_request(f'/api/v1.0/get/ascii_binary').respond_with_json(bin_json)
     httpserver.expect_request(f'/api/v1.0/get/image').respond_with_json(image_json)
