@@ -509,3 +509,8 @@ def test_return_progress(dispatcher_live_fixture, mock_backend):
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
+    assert 'progress_product_list' in jdata['products']
+    with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output.html'), 'r') as fd:
+        test_output_html = fd.read()
+
+    assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
