@@ -98,16 +98,19 @@ class NB2WDataDispatcher:
         query_out.set_done('input products check skipped')
         return query_out, []
 
-    def get_progress_run(self, **kwargs):
+    def get_progress_run(self,
+                         call_back_url=None,
+                         run_asynch=None,
+                         task=None,
+                         param_dict=None):
 
         query_out = QueryOutput()
         res_trace = None
 
-        task = kwargs.get('task', self.task)
-        param_dict = kwargs.get('param_dict', self.param_dict)
-
-        run_asynch = kwargs.get('run_asynch', None)
-        call_back_url = kwargs.get('call_back_url', None)
+        if task is None:
+            task = self.task
+        if param_dict is None:
+            param_dict = self.param_dict
         if run_asynch is not None and run_asynch and call_back_url is not None:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
