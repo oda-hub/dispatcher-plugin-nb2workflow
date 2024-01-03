@@ -505,7 +505,7 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
               'run_asynch': run_asynch,
               'return_progress': True}
 
-    c = requests.get(server + "/run_analysis",
+    c = requests.get(os.path.join(server, "run_analysis"),
                      params=params)
     logger.info("content: %s", c.text)
     jdata = c.json()
