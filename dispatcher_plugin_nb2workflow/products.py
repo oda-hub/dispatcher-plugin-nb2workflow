@@ -182,17 +182,6 @@ class NB2WProgressProduct(NB2WProduct):
         self.out_dir = out_dir
         self.name = name
         self.progress_data = progress_html_data
-        self.progress_product = True
-
-    def write(self):
-        file_path = os.path.join(self.out_dir, self.name)
-        with open(file_path, 'w') as fd:
-            fd.write(self.progress_data)
-        self.file_path = file_path
-
-    def get_html_draw(self):
-        # TODO not sure is correct, to verify
-        return {'image': {'div': '<br>' + self.progress_data, 'script': ''}}
 
 
 class NB2WPictureProduct(NB2WProduct): 
