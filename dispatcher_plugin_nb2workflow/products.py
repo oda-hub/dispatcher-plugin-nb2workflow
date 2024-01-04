@@ -176,8 +176,6 @@ class NB2WTextProduct(NB2WProduct):
 
 
 class NB2WProgressProduct(NB2WProduct):
-    # TODO to be adapted
-    type_key = 'http://odahub.io/ontology#ODAProgressProduct'
 
     def __init__(self, progress_html_data, out_dir=None, name='progress'):
         self.out_dir = out_dir
