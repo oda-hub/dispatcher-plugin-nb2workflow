@@ -32,6 +32,7 @@ class TableProduct(BaseQueryProduct):
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
         
 class NB2WProduct:  # TODO: decide on the name precedence 
+    progress_product = False
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
         self.name = name
         metadata = encoded_data.get('meta_data', {})
@@ -72,8 +73,8 @@ class NB2WProduct:  # TODO: decide on the name precedence
     @classmethod
     def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
         par_prod_classes = parameter_products_factory(ontology_path)
-        
-        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes} 
+
+        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes if hasattr(x, 'type_key')}
         
         prod_list = []
         for key in output_description_dict.keys():
@@ -181,6 +182,7 @@ class NB2WProgressProduct(NB2WProduct):
         self.out_dir = out_dir
         self.name = name
         self.progress_data = progress_html_data
+        self.progress_product = True
 
     def write(self):
         file_path = os.path.join(self.out_dir, self.name)
