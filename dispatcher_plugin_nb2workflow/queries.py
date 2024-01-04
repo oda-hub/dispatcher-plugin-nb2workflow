@@ -199,7 +199,7 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['file_name'] = file_name_list
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
-            if len(prod_list) == 1 and isinstance(prod_list[0], NB2WProgressProduct):
+            if len(prod_list.prod_list) == 1 and isinstance(prod_list.prod_list[0], NB2WProgressProduct):
                 query_out.prod_dictionary['progress_product_html_output'] = progress_product_list
             else:
                 if len(file_name_list) == 1:
