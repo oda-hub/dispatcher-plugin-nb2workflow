@@ -174,7 +174,7 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['text_product_list'] = text_dp_list
             query_out.prod_dictionary['progress_product_list'] = progress_dp_list
         else:
-            prod_name_list, file_name_list, image_list, progress_report_list = [], [], [], []
+            prod_name_list, file_name_list, image_list, progress_product_list = [], [], [], []
             for product in prod_list.prod_list:
                 html_draw = product.progress_data
                 if not isinstance(product, NB2WProgressProduct):
@@ -186,7 +186,7 @@ class NB2WProductQuery(ProductQuery):
                     if html_draw:
                         image_list.append(html_draw)
                 else:
-                    progress_report_list.append(html_draw)
+                    progress_product_list.append(html_draw)
 
                 prod_name_list.append(product.name)
 
@@ -194,7 +194,7 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
             if len(prod_list) == 1 and isinstance(prod_list[0], NB2WProgressProduct):
-                query_out.prod_dictionary['progress_report_html_output'] = progress_report_list
+                query_out.prod_dictionary['progress_product_html_output'] = progress_product_list
             else:
                 if len(file_name_list) == 1:
                     query_out.prod_dictionary['download_file_name'] = f'{file_name_list[0]}.gz'
