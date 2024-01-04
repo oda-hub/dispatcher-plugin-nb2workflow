@@ -520,7 +520,7 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
 
 
 @pytest.mark.parametrize("api", [True, False])
-def test_return_progress(dispatcher_live_fixture, mock_backend, api):
+def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
 
