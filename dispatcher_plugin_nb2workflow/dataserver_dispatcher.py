@@ -106,7 +106,7 @@ class NB2WDataDispatcher:
                          param_dict=None):
 
         query_out = QueryOutput()
-        res_trace = None
+        res_trace_dict = None
 
         if task is None:
             task = self.task
@@ -126,6 +126,10 @@ class NB2WDataDispatcher:
                 jobdir = resroot['jobdir'].split('/')[-1]
                 trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
                 res_trace = requests.get(trace_url)
+                if res_trace_dict is None:
+                    res_trace_dict = {}
+                res_trace_dict['res'] = res_trace
+                res_trace_dict['progress_product'] = True
 
             query_out.set_status(0, job_status=workflow_status)
         else:
@@ -138,7 +142,7 @@ class NB2WDataDispatcher:
                                      message='connection status code: ' + str(res.status_code),
                                      extra_message=res.text)
 
-        return res_trace, query_out
+        return res_trace_dict, query_out
 
     def run_query(self,
                   call_back_url = None,
