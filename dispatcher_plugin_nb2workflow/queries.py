@@ -181,8 +181,8 @@ class NB2WProductQuery(ProductQuery):
         else:
             prod_name_list, file_name_list, image_list, progress_product_list = [], [], [], []
             for product in prod_list.prod_list:
-                html_draw = product.progress_data
                 if not isinstance(product, NB2WProgressProduct):
+                    html_draw = product.get_html_draw()
                     product.write()
                     try:
                         file_name_list.append(os.path.basename(product.file_path))
@@ -191,6 +191,7 @@ class NB2WProductQuery(ProductQuery):
                     if html_draw:
                         image_list.append(html_draw)
                 else:
+                    html_draw = product.progress_data
                     progress_product_list.append(html_draw)
 
                 prod_name_list.append(product.name)
