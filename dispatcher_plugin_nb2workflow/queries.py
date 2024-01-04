@@ -174,25 +174,32 @@ class NB2WProductQuery(ProductQuery):
             query_out.prod_dictionary['text_product_list'] = text_dp_list
             query_out.prod_dictionary['progress_product_list'] = progress_dp_list
         else:
-            prod_name_list, file_name_list, image_list = [], [], []
+            prod_name_list, file_name_list, image_list, progress_report_list = [], [], [], []
             for product in prod_list.prod_list:
-                product.write()
-                try:
-                    file_name_list.append(os.path.basename(product.file_path))
-                except AttributeError:
-                    pass
-                im = product.get_html_draw()
-                if im:
-                    image_list.append(im)
+                html_draw = product.progress_data
+                if not isinstance(product, NB2WProgressProduct):
+                    product.write()
+                    try:
+                        file_name_list.append(os.path.basename(product.file_path))
+                    except AttributeError:
+                        pass
+                    if html_draw:
+                        image_list.append(html_draw)
+                else:
+                    progress_report_list.append(html_draw)
+
                 prod_name_list.append(product.name)
 
             query_out.prod_dictionary['file_name'] = file_name_list
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
-            if len(file_name_list) == 1:
-                query_out.prod_dictionary['download_file_name'] = f'{file_name_list[0]}.gz'
+            if len(prod_list) == 1 and isinstance(prod_list[0], NB2WProgressProduct):
+                query_out.prod_dictionary['progress_report_html_output'] = progress_report_list
             else:
-                query_out.prod_dictionary['download_file_name'] = f'{self.backend_product_name}.tar.gz' 
+                if len(file_name_list) == 1:
+                    query_out.prod_dictionary['download_file_name'] = f'{file_name_list[0]}.gz'
+                else:
+                    query_out.prod_dictionary['download_file_name'] = f'{self.backend_product_name}.tar.gz'
             query_out.prod_dictionary['prod_process_message'] = ''
 
         return query_out
