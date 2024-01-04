@@ -101,6 +101,7 @@ class NB2WDataDispatcher:
     def get_progress_run(self,
                          call_back_url=None,
                          run_asynch=None,
+                         logger=None,
                          task=None,
                          param_dict=None):
 
