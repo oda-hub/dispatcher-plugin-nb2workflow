@@ -134,7 +134,7 @@ class NB2WDataDispatcher:
 
             query_out.set_status(0, job_status=workflow_status)
         else:
-            if res.headers.get('content-type', None) == 'application/json':
+            if 'application/json' in res.headers.get('content-type', ''):
                 e_message = res.json()['exceptions'][0]
             else:
                 e_message = res.text
