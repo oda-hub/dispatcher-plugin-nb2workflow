@@ -137,10 +137,14 @@ class NB2WDataDispatcher:
                 query_out.set_failed('Error in the backend',
                                      message='connection status code: ' + str(res.status_code),
                                      extra_message=res.json()['exceptions'][0])
+                logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
+                             f'error: \n{res.json()["exceptions"][0]}')
             except:
                 query_out.set_failed('Error in the backend',
                                      message='connection status code: ' + str(res.status_code),
                                      extra_message=res.text)
+                logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
+                             f'error: \n{res.text}')
 
         return res_trace_dict, query_out
 
