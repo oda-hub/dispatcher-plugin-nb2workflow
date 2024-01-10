@@ -6,6 +6,7 @@ from . import exposer
 from urllib.parse import urlsplit, parse_qs, urlencode
 import os
 from glob import glob
+import json
 
 class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
@@ -133,18 +134,15 @@ class NB2WDataDispatcher:
 
             query_out.set_status(0, job_status=workflow_status)
         else:
-            try:
-                query_out.set_failed('Error in the backend',
-                                     message='connection status code: ' + str(res.status_code),
-                                     e_message=res.json()['exceptions'][0])
-                logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
-                             f'error: \n{res.json()["exceptions"][0]}')
-            except:
-                query_out.set_failed('Error in the backend',
-                                     message='connection status code: ' + str(res.status_code),
-                                     e_message=res.text)
-                logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
-                             f'error: \n{res.text}')
+            if res.headers.get('content-type', None) == 'application/json':
+                e_message = res.json()['exceptions'][0]
+            else:
+                e_message = res.text
+            query_out.set_failed('Error in the backend',
+                                 message='connection status code: ' + str(res.status_code),
+                                 e_message=e_message)
+            logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
+                         f'error: \n{e_message}')
 
         return res_trace_dict, query_out
 
