@@ -6,7 +6,6 @@ from . import exposer
 from urllib.parse import urlsplit, parse_qs, urlencode
 import os
 from glob import glob
-import json
 
 class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
