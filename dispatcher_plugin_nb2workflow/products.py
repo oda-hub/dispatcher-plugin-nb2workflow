@@ -32,7 +32,6 @@ class TableProduct(BaseQueryProduct):
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
         
 class NB2WProduct:  # TODO: decide on the name precedence 
-    progress_product = False
     def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
         self.name = name
         metadata = encoded_data.get('meta_data', {})
