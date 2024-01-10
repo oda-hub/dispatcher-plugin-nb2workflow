@@ -126,10 +126,10 @@ class NB2WDataDispatcher:
                 jobdir = resroot['jobdir'].split('/')[-1]
                 trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
                 res_trace = requests.get(trace_url)
-                if res_trace_dict is None:
-                    res_trace_dict = {}
-                res_trace_dict['res'] = res_trace
-                res_trace_dict['progress_product'] = True
+                res_trace_dict = {
+                    'res': res_trace,
+                    'progress_product': True
+                }
 
             query_out.set_status(0, job_status=workflow_status)
         else:
