@@ -112,7 +112,7 @@ class NB2WDataDispatcher:
             task = self.task
         if param_dict is None:
             param_dict = self.param_dict
-        if run_asynch is not None and run_asynch and call_back_url is not None:
+        if run_asynch and call_back_url is not None:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
 
