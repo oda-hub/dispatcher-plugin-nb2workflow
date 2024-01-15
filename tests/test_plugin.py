@@ -213,7 +213,7 @@ def test_table_product(dispatcher_live_fixture, mock_backend):
 def test_text_product(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
-    
+
     with open('tests/responses/ascii_binary.json', 'r') as fd:
         tab_resp_json = json.loads(fd.read())
         ascii_rep = tab_resp_json['output']['text_output']
@@ -490,3 +490,61 @@ def test_failed_nbhtml_download(live_nb2service,
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
+
+
+@pytest.mark.parametrize("run_asynch", [True, False])
+def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'api': 'True',
+              'run_asynch': run_asynch,
+              'return_progress': True}
+
+    c = requests.get(os.path.join(server, "run_analysis"),
+                     params=params)
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert 'progress_product_list' in jdata['products']
+    with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output.html'), 'r') as fd:
+        test_output_html = fd.read()
+
+    assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
+
+
+@pytest.mark.parametrize("api", [True, False])
+def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'run_asynch': True,
+              'return_progress': True}
+    if api:
+        params['api'] = True
+
+    c = requests.get(os.path.join(server, "run_analysis"),
+                     params=params)
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output.html'), 'r') as fd:
+        test_output_html = fd.read()
+    if api:
+        assert 'progress_product_list' in jdata['products']
+        assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
+    else:
+        assert 'progress_product_html_output' in jdata['products']
+        assert jdata['products']['progress_product_html_output'][0] == test_output_html

@@ -98,6 +98,53 @@ class NB2WDataDispatcher:
         query_out.set_done('input products check skipped')
         return query_out, []
 
+    def get_progress_run(self,
+                         call_back_url=None,
+                         run_asynch=None,
+                         logger=None,
+                         task=None,
+                         param_dict=None):
+
+        query_out = QueryOutput()
+        res_trace_dict = None
+
+        if task is None:
+            task = self.task
+        if param_dict is None:
+            param_dict = self.param_dict
+        if run_asynch and call_back_url is not None:
+            param_dict['_async_request_callback'] = call_back_url
+            param_dict['_async_request'] = "yes"
+
+        url = os.path.join(self.data_server_url, 'api/v1.0/get', task.strip('/'))
+        res = requests.get(url, params=param_dict)
+        if res.status_code in [200, 201]:
+            res_data = res.json()
+            workflow_status = res_data['workflow_status'] if run_asynch else 'done'
+            if workflow_status == 'started' or workflow_status == 'done':
+                resroot = res_data['data'] if run_asynch and workflow_status == 'done' else res_data
+                jobdir = resroot['jobdir'].split('/')[-1]
+                trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
+                res_trace = requests.get(trace_url)
+                res_trace_dict = {
+                    'res': res_trace,
+                    'progress_product': True
+                }
+
+            query_out.set_status(0, job_status=workflow_status)
+        else:
+            if 'application/json' in res.headers.get('content-type', ''):
+                e_message = res.json()['exceptions'][0]
+            else:
+                e_message = res.text
+            query_out.set_failed('Error in the backend',
+                                 message='connection status code: ' + str(res.status_code),
+                                 e_message=e_message)
+            logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
+                         f'error: \n{e_message}')
+
+        return res_trace_dict, query_out
+
     def run_query(self,
                   call_back_url = None,
                   run_asynch = True,

@@ -72,25 +72,25 @@ class NB2WProduct:  # TODO: decide on the name precedence
     @classmethod
     def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
         par_prod_classes = parameter_products_factory(ontology_path)
-        
-        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes} 
+
+        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes if hasattr(x, 'type_key')}
         
         prod_list = []
         for key in output_description_dict.keys():
             owl_type = output_description_dict[key]['owl_type']
-            
+
             extra_kw = {}
             extra_ttl = output_description_dict[key].get('extra_ttl')
-            if extra_ttl == '\n': extra_ttl = None 
+            if extra_ttl == '\n': extra_ttl = None
             if extra_ttl:
                 extra_kw = {'extra_ttl': extra_ttl}
 
             try:
-                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key], 
-                                                                           out_dir=out_dir, 
-                                                                           name=key, 
+                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key],
+                                                                           out_dir=out_dir,
+                                                                           name=key,
                                                                            **extra_kw
-                                                                           ) 
+                                                                           )
                                  )
             except Exception as e:
                 logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
@@ -173,6 +173,15 @@ class NB2WTextProduct(NB2WProduct):
         
     def get_html_draw(self):
         return {'image': {'div': '<br>'+self.data_prod, 'script': ''} }
+
+
+class NB2WProgressProduct(NB2WProduct):
+
+    def __init__(self, progress_html_data, out_dir=None, name='progress'):
+        self.out_dir = out_dir
+        self.name = name
+        self.progress_data = progress_html_data
+
 
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
