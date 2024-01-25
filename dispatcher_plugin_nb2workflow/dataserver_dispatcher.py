@@ -130,7 +130,7 @@ class NB2WDataDispatcher:
                     'res': res_trace,
                     'progress_product': True
                 }
-
+            workflow_status = 'progress' if workflow_status == 'started' else workflow_status
             query_out.set_status(0, job_status=workflow_status)
         else:
             if 'application/json' in res.headers.get('content-type', ''):
