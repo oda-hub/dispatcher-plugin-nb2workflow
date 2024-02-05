@@ -548,3 +548,39 @@ def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
     else:
         assert 'progress_product_html_output' in jdata['products']
         assert jdata['products']['progress_product_html_output'][0] == test_output_html
+
+
+@pytest.mark.fullstack
+def test_structured_param(live_nb2service,
+                          conf_file, 
+                          dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        from oda_api.api import DispatcherAPI
+        disp = DispatcherAPI(url=server)
+        prod = disp.get_product(instrument = "example", 
+                                product = "structured",
+                                struct_par = {'col1': ['spam', 'ham'],
+                                              'col2': [5, 1],
+                                              'col3': [7.1, 8.2]}
+                                )
+        
+        assert (prod.myname_0.table['col1'] == ['spam', 'ham']).all()
+        assert (prod.myname_0.table['col2'] == [5, 1]).all()
+        assert (prod.myname_0.table['col3'] == [7.1, 8.2]).all()
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
