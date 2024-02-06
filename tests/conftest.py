@@ -23,6 +23,19 @@ instruments:
     dummy_cache: ""
 """
 
+backend_status_fn = "Backend-status.state"
+
+
+def set_backend_status(value):
+    open(backend_status_fn, "w").write(value)
+
+
+def get_backend_status():
+    if os.path.exists(backend_status_fn):
+        return open(backend_status_fn).read()
+    else:
+        return ''
+
 
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
@@ -33,16 +46,22 @@ def lightcurve_handler(request: Request):
     parsed_request_query = parse_qs(urlparse(request.url).query)
     async_request = parsed_request_query.get('_async_request', ['no'])
     responses_path = os.path.join(os.path.dirname(__file__), 'responses')
-    if async_request[0] == 'yes':
-        with open(os.path.join(responses_path, 'lightcurve_async.json'), 'r') as fd:
-            runjson_async = json.loads(fd.read())
-        response_data = json.dumps(runjson_async, indent=4)
-        return Response(response_data, status=200, content_type='application/json')
+
+    backend_status = get_backend_status()
+
+    if backend_status == 'fail':
+        return Response("backend failure", status=500, content_type=' text/plain')
     else:
-        with open(os.path.join(responses_path, 'lightcurve.json'), 'r') as fd:
-            runjson = json.loads(fd.read())
-        response_data = json.dumps(runjson, indent=4)
-        return Response(response_data, status=200, content_type='application/json')
+        if async_request[0] == 'yes':
+            with open(os.path.join(responses_path, 'lightcurve_async.json'), 'r') as fd:
+                runjson_async = json.loads(fd.read())
+            response_data = json.dumps(runjson_async, indent=4)
+            return Response(response_data, status=200, content_type='application/json')
+        else:
+            with open(os.path.join(responses_path, 'lightcurve.json'), 'r') as fd:
+                runjson = json.loads(fd.read())
+            response_data = json.dumps(runjson, indent=4)
+            return Response(response_data, status=200, content_type='application/json')
 
 
 @pytest.fixture
