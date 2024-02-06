@@ -24,6 +24,7 @@ instruments:
 """
 
 backend_status_fn = "Backend-status.state"
+trace_backend_status_fn = "Trace-Backend-status.state"
 
 
 def set_backend_status(value):
@@ -51,6 +52,8 @@ def lightcurve_handler(request: Request):
 
     if backend_status == 'fail':
         return Response("backend failure", status=500, content_type=' text/plain')
+    elif backend_status == 'trace_fail':
+        return Response('{"workflow_status": "done", "data": {}}', status=200, content_type='application/json')
     else:
         if async_request[0] == 'yes':
             with open(os.path.join(responses_path, 'lightcurve_async.json'), 'r') as fd:

@@ -175,6 +175,7 @@ def test_pass_comment(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
     set_backend_status('')
+
     c = requests.get(server + "/run_analysis",
                     params = {'instrument': 'example0',
                               'query_status': 'new',
@@ -499,6 +500,7 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
     set_backend_status('')
+
     params = {'instrument': 'example0',
               'query_status': 'new',
               'query_type': 'Real',
@@ -525,7 +527,9 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
 def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
+
     set_backend_status('')
+
     params = {'instrument': 'example0',
               'query_status': 'new',
               'query_type': 'Real',
@@ -552,8 +556,7 @@ def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
         assert jdata['products']['progress_product_html_output'][0] == test_output_html
 
 
-@pytest.mark.parametrize("api", [True, False])
-def test_fail_return_progress(dispatcher_live_fixture, mock_backend, api):
+def test_fail_return_progress(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
 
@@ -565,8 +568,6 @@ def test_fail_return_progress(dispatcher_live_fixture, mock_backend, api):
               'product_type': 'lightcurve',
               'run_asynch': True,
               'return_progress': True}
-    if api:
-        params['api'] = True
 
     c = requests.get(os.path.join(server, "run_analysis"),
                      params=params)
@@ -577,3 +578,27 @@ def test_fail_return_progress(dispatcher_live_fixture, mock_backend, api):
     logger.info(jdata)
     assert jdata['job_status'] == 'failed'
     assert jdata['exit_status']['message'] == 'connection status code: 500'
+
+
+def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    set_backend_status('trace_fail')
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'run_asynch': True,
+              'return_progress': True}
+
+    c = requests.get(os.path.join(server, "run_analysis"),
+                     params=params)
+    logger.info("content: %s", c.text)
+    assert c.status_code == 200
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert jdata['job_status'] == 'done'
+    assert 'progress_product_html_output' not in jdata['products']
