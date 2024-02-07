@@ -132,18 +132,19 @@ class NB2WProductQuery(ProductQuery):
         if isinstance(res, dict):
             res_progress_product = res.get('progress_product', False)
             res = res.get('res', None)
-        res_content_type = res.headers.get('content-type', None)
-        if res_content_type is not None and res_content_type == 'application/json':
-            if 'output' in res.json().keys(): # in synchronous mode
-                _o_dict = res.json()
+        if res is not None:
+            res_content_type = res.headers.get('content-type', None)
+            if res_content_type is not None and res_content_type == 'application/json':
+                if 'output' in res.json().keys(): # in synchronous mode
+                    _o_dict = res.json()
+                else:
+                    _o_dict = res.json()['data']
+                _output = _o_dict['output']
+                prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _output, out_dir, self.ontology_path)
             else:
-                _o_dict = res.json()['data']
-            _output = _o_dict['output']
-            prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _output, out_dir, self.ontology_path)
-        else:
-            _o_text = res.content.decode()
-            if res_progress_product:
-                prod_list.append(NB2WProgressProduct(_o_text, out_dir))
+                _o_text = res.content.decode()
+                if res_progress_product:
+                    prod_list.append(NB2WProgressProduct(_o_text, out_dir))
 
         return prod_list
 

@@ -10,6 +10,8 @@ import re
 import gzip
 import os
 from magic import from_buffer as mime_from_buffer
+from conftest import set_backend_status
+
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +174,8 @@ def test_instrument_added(conf_file, dispatcher_live_fixture, mock_backend):
 def test_pass_comment(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
-       
+    set_backend_status('')
+
     c = requests.get(server + "/run_analysis",
                     params = {'instrument': 'example0',
                               'query_status': 'new',
@@ -496,6 +499,7 @@ def test_failed_nbhtml_download(live_nb2service,
 def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
+    set_backend_status('')
 
     params = {'instrument': 'example0',
               'query_status': 'new',
@@ -523,6 +527,8 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
 def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
+
+    set_backend_status('')
 
     params = {'instrument': 'example0',
               'query_status': 'new',
@@ -584,3 +590,51 @@ def test_structured_param(live_nb2service,
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
+
+
+def test_fail_return_progress(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    set_backend_status('fail')
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'run_asynch': True,
+              'return_progress': True}
+
+    c = requests.get(os.path.join(server, "run_analysis"),
+                     params=params)
+    logger.info("content: %s", c.text)
+    assert c.status_code == 200
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert jdata['job_status'] == 'failed'
+    assert jdata['exit_status']['message'] == 'connection status code: 500'
+
+
+def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    set_backend_status('trace_fail')
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'run_asynch': True,
+              'return_progress': True}
+
+    c = requests.get(os.path.join(server, "run_analysis"),
+                     params=params)
+    logger.info("content: %s", c.text)
+    assert c.status_code == 200
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert jdata['job_status'] == 'done'
+    assert 'progress_product_html_output' not in jdata['products']
