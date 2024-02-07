@@ -123,13 +123,15 @@ class NB2WDataDispatcher:
             workflow_status = res_data['workflow_status'] if run_asynch else 'done'
             if workflow_status == 'started' or workflow_status == 'done':
                 resroot = res_data['data'] if run_asynch and workflow_status == 'done' else res_data
-                jobdir = resroot['jobdir'].split('/')[-1]
-                trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
-                res_trace = requests.get(trace_url)
-                res_trace_dict = {
-                    'res': res_trace,
-                    'progress_product': True
-                }
+                jobdir = resroot.get('jobdir', None)
+                if jobdir is not None:
+                    jobdir = jobdir.split('/')[-1]
+                    trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
+                    res_trace = requests.get(trace_url)
+                    res_trace_dict = {
+                        'res': res_trace,
+                        'progress_product': True
+                    }
             workflow_status = 'progress' if workflow_status == 'started' else workflow_status
             query_out.set_status(0, job_status=workflow_status)
         else:
