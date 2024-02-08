@@ -111,12 +111,7 @@ class NB2WProductQuery(ProductQuery):
         for param_name in instrument.get_parameters_name_list(prod_name = self.backend_product_name):
             param_instance = instrument.get_par_by_name(param_name, prod_name = self.backend_product_name)
             bk_pname = self.par_name_substitution.get(param_name, param_name)
-            if getattr(param_instance, 'par_default_format'):
-                param_dict[bk_pname] = param_instance.get_value_in_default_format()
-            elif getattr(param_instance, 'default_units'):
-                param_dict[bk_pname] = param_instance.get_value_in_default_units()
-            else:
-                param_dict[bk_pname] = param_instance.value
+            param_dict[bk_pname] = param_instance.get_default_value()
 
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
