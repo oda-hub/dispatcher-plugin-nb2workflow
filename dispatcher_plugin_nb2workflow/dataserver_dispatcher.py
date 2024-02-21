@@ -21,7 +21,6 @@ class NB2WDataDispatcher:
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict
-        self.backend_options = self.query_backend_options()
         
         self.external_disp_url = None 
         if not isinstance(instrument, str): # TODO: seems this is always the case. But what if not?
@@ -30,19 +29,23 @@ class NB2WDataDispatcher:
             if parsed.scheme and parsed.netloc:
                 self.external_disp_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
         
-            
-    def query_backend_options(self):
-        url = self.data_server_url.strip('/') + '/api/v1.0/options'
+    @property
+    def backend_options(self):
         try:
-            res = requests.get("%s" % (url), params=None)
-        except:
-            return {}
-        if res.status_code == 200:
-            options_dict = res.json()
-        else:
-            return {}
-            raise ConnectionError(f"Backend connection failed: {res.status_code}")
-            # TODO: consecutive requests if failed
+            options_dict = self._backend_options
+        except AttributeError:
+            url = self.data_server_url.strip('/') + '/api/v1.0/options'
+            try:
+                res = requests.get("%s" % (url), params=None)
+            except:
+                return {}
+            if res.status_code == 200:
+                options_dict = res.json()
+            else:
+                return {}
+                raise ConnectionError(f"Backend connection failed: {res.status_code}")
+                # TODO: consecutive requests if failed
+            self._backend_options = options_dict
         return options_dict
         
     def get_backend_comment(self, product):

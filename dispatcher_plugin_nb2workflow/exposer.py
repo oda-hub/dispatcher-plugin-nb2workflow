@@ -103,7 +103,7 @@ logger.info('Using ontology from %s', ontology_path)
 
 def factory_factory(instr_name, restricted_access):
     def instr_factory():
-        backend_options = NB2WDataDispatcher(instrument=instr_name).query_backend_options()
+        backend_options = NB2WDataDispatcher(instrument=instr_name).backend_options
         query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(backend_options, ontology_path)
         return Instrument(instr_name,
                         src_query = NB2WSourceQuery.from_backend_options(backend_options, ontology_path),
