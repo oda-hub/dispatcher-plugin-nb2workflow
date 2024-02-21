@@ -78,7 +78,7 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
         source_plist.append(cls(**signatures['source_p_kw'][i]))
     prod_plist = []
     for i, cls in enumerate(signatures['prod_p_cls']):
-        prod_plist.append(cls(**signatures['prod_p_kw']))
+        prod_plist.append(cls(**signatures['prod_p_kw'][i]))
         
     return {'source_plist': source_plist,
             'prod_plist': prod_plist,
