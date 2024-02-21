@@ -40,7 +40,7 @@ def construct_parameter_signatures(backend_param_dict, ontology_path):
     for pname, pval in backend_param_dict.items():
         onto = Ontology(ontology_path)
         if pval.get("extra_ttl"):
-            onto.parse_extra_triples(pval.get("extra_ttl"))
+            onto.parse_extra_triples(pval.get("extra_ttl"), parse_oda_annotations = False)
         onto_class_hierarchy = onto.get_parameter_hierarchy(pval['owl_type'])
         src_query_owl_uri_set = set(onto_class_hierarchy).intersection(src_query_pars_uris.keys())
         if src_query_owl_uri_set:
