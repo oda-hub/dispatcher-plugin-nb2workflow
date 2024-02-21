@@ -46,24 +46,24 @@ def construct_parameter_signatures(backend_param_dict, ontology_path):
         if src_query_owl_uri_set:
             default_pname = src_query_pars_uris[src_query_owl_uri_set.pop()]
             par_name_substitution[ default_pname ] = pname
-            source_plist.append(Parameter.from_owl_uri(pval['owl_type'],
-                                                       value=pval['default_value'],
-                                                       name=default_pname,
-                                                       ontology_path=onto,
-                                                       extra_ttl=pval.get("extra_ttl")
-                                                       ))
+            source_plist.append(Parameter.instance_signature_from_owl_uri(pval['owl_type'],
+                                                                          value=pval['default_value'],
+                                                                          name=default_pname,
+                                                                          ontology_path=onto,
+                                                                          extra_ttl=pval.get("extra_ttl")
+                                                                          ))
         else:
             #if param name coincides with the SourceQuery default names, but it's not properly annotated, rename
             cur_name = pname
             if pname in src_query_pars_uris.values():
                 cur_name = pname + '_rename'
                 par_name_substitution[ cur_name ] = pname
-            plist.append(Parameter.from_owl_uri(pval['owl_type'],
-                                                value=pval['default_value'],
-                                                name=cur_name,
-                                                ontology_path=onto,
-                                                extra_ttl=pval.get("extra_ttl")
-                                                ))
+            plist.append(Parameter.instance_signature_from_owl_uri(pval['owl_type'],
+                                                                   value=pval['default_value'],
+                                                                   name=cur_name,
+                                                                   ontology_path=onto,
+                                                                   extra_ttl=pval.get("extra_ttl")
+                                                                   ))
     return {'source_p_cls': [x[1] for x in source_plist],
             'source_p_kw': [x[2] for x in source_plist],
             'prod_p_cls': [x[1] for x in plist],
