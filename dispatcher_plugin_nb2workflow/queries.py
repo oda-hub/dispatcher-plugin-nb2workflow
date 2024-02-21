@@ -15,7 +15,7 @@ from json import dumps
 
 class HashableDict(dict):
     def __hash__(self):
-        return hash(dumps(self))
+        return hash(dumps(self, sort_keys=True))
 
 def with_hashable_dict(func):
     def wrapper(backend_param_dict, ontology_path):
@@ -25,12 +25,14 @@ def with_hashable_dict(func):
 
 @with_hashable_dict
 @lru_cache
-def construct_parameter_lists(backend_param_dict, ontology_path):
+def construct_parameter_signatures(backend_param_dict, ontology_path):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
                             "http://odahub.io/ontology#StartTime": "T1",
                             "http://odahub.io/ontology#EndTime": "T2",
-                            "http://odahub.io/ontology#AstrophysicalObject": "src_name"}
+                            "http://odahub.io/ontology#AstrophysicalObject": "src_name",
+                            #"ThisTermShouldNotExist": "token"
+                          }
     par_name_substitution = {}
 
     plist = []
@@ -47,7 +49,7 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
             source_plist.append(Parameter.from_owl_uri(pval['owl_type'],
                                                        value=pval['default_value'],
                                                        name=default_pname,
-                                                       ontology_path=ontology_path,
+                                                       ontology_path=onto,
                                                        extra_ttl=pval.get("extra_ttl")
                                                        ))
         else:
@@ -59,13 +61,28 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
             plist.append(Parameter.from_owl_uri(pval['owl_type'],
                                                 value=pval['default_value'],
                                                 name=cur_name,
-                                                ontology_path=ontology_path,
+                                                ontology_path=onto,
                                                 extra_ttl=pval.get("extra_ttl")
                                                 ))
-
+    return {'source_p_cls': [x[1] for x in source_plist],
+            'source_p_kw': [x[2] for x in source_plist],
+            'prod_p_cls': [x[1] for x in plist],
+            'prod_p_kw': [x[2] for x in plist],
+            'par_name_substitution': par_name_substitution
+            }
+    
+def construct_parameter_lists(backend_param_dict, ontology_path):
+    signatures = construct_parameter_signatures(backend_param_dict, ontology_path)
+    source_plist = []
+    for i, cls in enumerate(signatures['source_p_cls']):
+        source_plist.append(cls(**signatures['source_p_kw'][i]))
+    prod_plist = []
+    for i, cls in enumerate(signatures['prod_p_cls']):
+        prod_plist.append(cls(**signatures['prod_p_kw']))
+        
     return {'source_plist': source_plist,
-            'prod_plist': plist,
-            'par_name_substitution': par_name_substitution}
+            'prod_plist': prod_plist,
+            'par_name_substitution': signatures['par_name_substitution']}
 
 class NB2WSourceQuery(BaseQuery):
     @classmethod
