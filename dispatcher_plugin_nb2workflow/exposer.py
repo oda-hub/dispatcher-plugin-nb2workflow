@@ -102,18 +102,21 @@ else:
 logger.info('Using ontology from %s', ontology_path)
 
 def factory_factory(instr_name, restricted_access):
+    instrument_query = NB2WInstrumentQuery('instr_query', restricted_access)
     def instr_factory():
         backend_options = NB2WDataDispatcher(instrument=instr_name).backend_options
         query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(backend_options, ontology_path)
         return Instrument(instr_name,
                         src_query = NB2WSourceQuery.from_backend_options(backend_options, ontology_path),
-                        instrumet_query = NB2WInstrumentQuery('instr_query', restricted_access),
+                        instrumet_query = instrument_query,
                         data_serve_conf_file=conf_file,
                         product_queries_list=query_list,
                         query_dictionary=query_dict,
                         asynch=True, 
                         data_server_query_class=NB2WDataDispatcher,
                         )
+    instr_factory.instr_name = instr_name
+    instr_factory.instrument_query = instrument_query
     return instr_factory
 
 instr_factory_list = [ factory_factory(instr_name, instr_conf.get('restricted_access', False)) 
