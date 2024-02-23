@@ -638,3 +638,45 @@ def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
     logger.info(jdata)
     assert jdata['job_status'] == 'done'
     assert 'progress_product_html_output' not in jdata['products']
+
+
+def test_default_value_preservation(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+    
+    def get_param_default():
+        c = requests.get(server + "/api/meta-data",
+                        params = {'instrument': 'example0'})
+        assert c.status_code == 200
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(jdata)
+        
+        for x in jdata[0]:
+            if isinstance(x, dict):
+                continue
+            elif isinstance(x, list):
+                # if we finally decide to output it non-encoded at some point
+                pass
+            else:
+                x = json.loads(x)
+            
+            if {"query_name": "table_query"} in x:
+                some_param_value = x[2]['value']
+        return some_param_value
+    
+    some_param_value = get_param_default()
+    
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'table',
+              'some_param': 5,
+              'run_asynch': False}
+    c = requests.get(server + "/run_analysis",
+                    params = params)
+    assert c.status_code == 200    
+            
+    new_param_value = get_param_default()
+    
+    assert new_param_value == some_param_value
