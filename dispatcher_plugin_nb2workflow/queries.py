@@ -12,19 +12,25 @@ from cdci_data_analysis.analysis.ontology import Ontology
 import os
 from functools import lru_cache
 from json import dumps
+from copy import copy
 
 class HashableDict(dict):
     def __hash__(self):
         return hash(dumps(self, sort_keys=True))
+
+def copying_lru_cache(func):
+    def wrapper(backend_param_dict, ontology_path):
+        cached_func = lru_cache()(func)
+        return copy(cached_func(backend_param_dict, ontology_path))
+    return wrapper
 
 def with_hashable_dict(func):
     def wrapper(backend_param_dict, ontology_path):
         return func(HashableDict(backend_param_dict), ontology_path)
     return wrapper
 
-
 @with_hashable_dict
-@lru_cache
+@copying_lru_cache
 def construct_parameter_lists(backend_param_dict, ontology_path):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
