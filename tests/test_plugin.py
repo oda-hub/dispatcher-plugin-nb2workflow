@@ -680,3 +680,62 @@ def test_default_value_preservation(dispatcher_live_fixture, mock_backend):
     new_param_value = get_param_default()
     
     assert new_param_value == some_param_value
+
+@pytest.mark.fullstack
+def test_structured_default_value_preservation(live_nb2service,
+                                               conf_file, 
+                                               dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        def get_param_default():
+            c = requests.get(server + "/api/meta-data",
+                            params = {'instrument': 'example'})
+            assert c.status_code == 200
+            logger.info("content: %s", c.text)
+            jdata = c.json()
+            logger.info(jdata)
+            
+            for x in jdata[0]:
+                if isinstance(x, dict):
+                    continue
+                elif isinstance(x, list):
+                    # if we finally decide to output it non-encoded at some point
+                    pass
+                else:
+                    x = json.loads(x)
+                
+                if {"query_name": "structured_query"} in x:
+                    param_value = x[2]['value']
+            return param_value
+        
+        struct_par_value = get_param_default()
+
+        params = {'instrument': 'example',
+                'query_status': 'new',
+                'query_type': 'Real',
+                'product_type': 'structured',
+                'struct_par': '{"col4": ["spam", "ham"]}',
+                'run_asynch': False}
+        c = requests.get(server + "/run_analysis",
+                        params = params)
+        assert c.status_code == 200    
+                
+        new_param_value = get_param_default()
+        
+        assert new_param_value == struct_par_value
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
