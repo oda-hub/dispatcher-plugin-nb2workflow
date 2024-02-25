@@ -50,10 +50,28 @@ def kg_select(t, kg_conf_dict):
     logger.warning(json.dumps(qres_js, indent=4))
     
     return qres_js
-    
 
+def get_instrs_from_kg(kg_conf_dict):
+    instruments = []
+    for r in kg_select('''
+        ?w a <http://odahub.io/ontology#WorkflowService>;
+        <http://odahub.io/ontology#deployment_name> ?deployment_name;
+        <http://odahub.io/ontology#service_name> ?service_name ;
+        <https://schema.org/creativeWorkStatus>?  ?work_status .               
+    ''', kg_conf_dict): 
+
+        logger.info('found instrument service record %s', r)
+        instruments[r['service_name']['value']] = {
+            "data_server_url": f"http://{r['deployment_name']['value']}:8000",
+            "dummy_cache": "",
+            "restricted_access": False if r['work_status']['value'] == "production" else True
+        }
+    
+    return instruments
+    
+    
 def get_instr_conf(from_conf_file=None):
-    global conf_file
+    masked_conf_file = from_conf_file
     
     # current default - query central oda kb 
     # TODO: better default will be some regullary updated static location
@@ -68,32 +86,20 @@ def get_instr_conf(from_conf_file=None):
                 if 'instruments' in f_cfg_dict.keys():
                     cfg_dict['instruments'] = f_cfg_dict['instruments']
                 else:
-                    conf_file = None
+                    masked_conf_file = None 
+                    # need to set to None as it's being read inside Instrument
                 if 'ontology_path' in f_cfg_dict.keys():
                     cfg_dict['ontology_path'] = f_cfg_dict['ontology_path']
                 if 'kg' in f_cfg_dict.keys():
                     kg_conf_dict = f_cfg_dict['kg']
             else:
-                conf_file = None
-        
+                masked_conf_file = None
     
-    for r in kg_select('''
-            ?w a <http://odahub.io/ontology#WorkflowService>;
-               <http://odahub.io/ontology#deployment_name> ?deployment_name;
-               <http://odahub.io/ontology#service_name> ?service_name ;
-               <https://schema.org/creativeWorkStatus>?  ?work_status .               
-        ''', kg_conf_dict): 
-
-        logger.info('found instrument service record %s', r)
-        cfg_dict['instruments'][r['service_name']['value']] = {
-            "data_server_url": f"http://{r['deployment_name']['value']}:8000",
-            "dummy_cache": "",
-            "restricted_access": False if r['work_status']['value'] == "production" else True
-        }
+    cfg_dict['kg_instruments'].update(get_instrs_from_kg(kg_conf_dict))
     
-    return cfg_dict
+    return cfg_dict, masked_conf_file
 
-config_dict = get_instr_conf(conf_file)
+config_dict, masked_conf_file = get_instr_conf(conf_file)
 if 'ODA_ONTOLOGY_PATH' in os.environ:
     ontology_path = os.environ.get('ODA_ONTOLOGY_PATH')
 else:
@@ -109,7 +115,7 @@ def factory_factory(instr_name, restricted_access):
         return Instrument(instr_name,
                         src_query = NB2WSourceQuery.from_backend_options(backend_options, ontology_path),
                         instrumet_query = instrument_query,
-                        data_serve_conf_file=conf_file,
+                        data_serve_conf_file=masked_conf_file,
                         product_queries_list=query_list,
                         query_dictionary=query_dict,
                         asynch=True, 
@@ -119,5 +125,32 @@ def factory_factory(instr_name, restricted_access):
     instr_factory.instrument_query = instrument_query
     return instr_factory
 
+class NB2WInstrumentFactoryIter:
+    def __init__(self, lst):
+        self.lst = lst
+    
+    def _update_instruments_list(self):
+        static_instrs = config_dict['instruments']
+        kg_instrs = get_instrs_from_kg(config_dict)
+        
+        current_instrs = [x.instr_name for x in self.lst]
+        available_instrs = static_instrs.keys() + kg_instrs.keys()
+        new_instrs = set(available_instrs) - set(current_instrs)
+        old_instrs = set(current_instrs) - set(available_instrs)
+        
+        if old_instrs:
+            for instr in old_instrs:
+                idx = current_instrs.index(instr)
+                self.lst.pop(idx)
+        
+        if new_instrs:
+            for instr in new_instrs:
+                self.lst.append(factory_factory(instr, kg_instrs[instr].get('restricted_access', False)))
+        
+    def __iter__(self):
+        self._update_instruments_list()
+        return self.lst.__iter__()    
+                    
 instr_factory_list = [ factory_factory(instr_name, instr_conf.get('restricted_access', False)) 
-                       for instr_name, instr_conf in config_dict['instruments'].items() ]
+                       for instr_name, instr_conf in 
+                       config_dict['instruments'].items() + config_dict['kg_instruments'].items() ]
