@@ -277,6 +277,38 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
+def test_external_service_kg(conf_file, dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+        
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write(dedent("""
+                            kg:
+                              type: "query-service"
+                              path: "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"
+                            """))
+    
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+            
+        c = requests.get(server + "/instr-list",
+                        params = {'instrument': 'mock', 
+                                'token': encoded_token})
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200 
+        assert 'lightcurve-example' in jdata # TODO: change to what will be used in docs
+    
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+            
+            
 @pytest.mark.parametrize("privileged", [True, False])
 def test_local_kg(conf_file, dispatcher_live_fixture, privileged):  
     with open(conf_file, 'r') as fd:
