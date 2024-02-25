@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 config_two_instruments = """    
 instruments:
   example0:
-    data_server_url: http://localhost:9494
+    data_server_url: http://localhost:8000
     dummy_cache: ""
   example1:
     data_server_url: http://localhost:9595
@@ -800,11 +800,8 @@ def test_added_in_kg(conf_file, dispatcher_live_fixture):
         
         with open(tmpkg, 'a') as fd:
             fd.write(dedent('''
-                <https://path.to/prod1.git> a oda:Workflow,
-                    oda:WorkflowService,
-                    oda:workflow ;
+                <https://path.to/prod1.git> a oda:WorkflowService;
                     oda:deployment_name "kgprod1-workflow-backend" ;
-                    oda:deployment_namespace "oda-staging" ;
                     oda:service_name "kgprod1" ;
                     sdo:creativeWorkStatus "production" .
                 '''))
@@ -821,4 +818,52 @@ def test_added_in_kg(conf_file, dispatcher_live_fixture):
             fd.write(conf_bk)        
         os.remove(tmpkg)
 
-# TODO: test_instrument_parameters kg-based (not in static file). (Means instrument factory is properly built.)
+def test_kg_based_instrument_parameters(conf_file, dispatcher_live_fixture, caplog, mock_backend):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        tmpkg = '/tmp/example-kg.ttl'
+        
+        with open(conf_file, 'w') as fd:
+            fd.write(dedent(f"""
+                             kg:
+                               type: "file"
+                               path: "{tmpkg}"
+                             """
+                            ))
+            
+        with open(tmpkg, 'w') as fd:    
+            fd.write(dedent("""
+                            @prefix oda: <http://odahub.io/ontology#> .
+                            @prefix sdo: <https://schema.org/> .
+
+                            <https://path.to/repo.git> a oda:WorkflowService;
+                                oda:deployment_name "localhost" ;
+                                oda:service_name "example0" ;
+                                sdo:creativeWorkStatus "production" .
+                            """))
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+
+        # reload to read config
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        c = requests.get(server + "/api/par-names",
+                         params = {'instrument': 'example0'})
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200
+        assert sorted(jdata) == sorted(expected_arguments)
+        assert "will be discarded for the instantiation" not in caplog.text
+        assert "Possibly a programming error" not in caplog.text
+        
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+        os.remove(tmpkg)
