@@ -25,21 +25,29 @@ class NB2WDataDispatcher:
                 self.external_disp_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
         
     @property
-    def backend_options(self):
+    def backend_options(self, max_trial=5, sleep_seconds=5):
         try:
             options_dict = self._backend_options
         except AttributeError:
             url = self.data_server_url.strip('/') + '/api/v1.0/options'
-            try:
-                res = requests.get("%s" % (url), params=None)
-            except:
-                return {}
-            if res.status_code == 200:
-                options_dict = res.json()
-            else:
-                return {}
-                raise ConnectionError(f"Backend connection failed: {res.status_code}")
-                # TODO: consecutive requests if failed
+            for i in range(max_trial):
+                try:
+                    res = requests.get("%s" % (url), params=None)
+
+                    if res.status_code == 200:
+                        options_dict = res.json()
+                        backend_available = True
+                        break
+                    else:
+                        raise RuntimeError("Backend options request failed. " 
+                                           f"Exit code: {res.status_code}. "
+                                           f"Response: {res.text}")
+                except Exception as e:
+                    backend_available = False
+                    time.sleep(sleep_seconds)
+            if not backend_available:
+                raise e
+            
             self._backend_options = options_dict
         return options_dict
         
@@ -54,7 +62,7 @@ class NB2WDataDispatcher:
         
     def test_communication(self, max_trial=10, sleep_s=1, logger=None):
         print('--> start test connection')
-
+        
         query_out = QueryOutput()
         no_connection = True
         excep = Exception()
