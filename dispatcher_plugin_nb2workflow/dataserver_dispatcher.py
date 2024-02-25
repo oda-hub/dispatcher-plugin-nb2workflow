@@ -6,6 +6,9 @@ from . import exposer
 from urllib.parse import urlsplit, parse_qs, urlencode
 import os
 from glob import glob
+import logging
+
+logger = logging.getLogger()
 
 class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
@@ -29,7 +32,6 @@ class NB2WDataDispatcher:
         try:
             options_dict = self._backend_options
         except AttributeError:
-            exceptions = []
             url = self.data_server_url.strip('/') + '/api/v1.0/options'
             for i in range(max_trial):
                 try:
@@ -45,10 +47,10 @@ class NB2WDataDispatcher:
                                            f"Response: {res.text}")
                 except Exception as e:
                     backend_available = False
-                    exceptions.append(e)
+                    logger.error(f"Exception while getting backend options {repr(e)}")
                     time.sleep(sleep_seconds)
             if not backend_available:
-                raise exceptions[-1]
+                return {}
             
             self._backend_options = options_dict
         return options_dict
