@@ -35,7 +35,9 @@ def kg_select(t, kg_conf_dict):
         if os.path.isfile(kg_conf_dict['path']):
             graph.parse(kg_conf_dict['path'])
         else:
-            logger.warning("Knowledge graph file %s doesn't exist yet. No instruments information will be loaded.")
+            logger.warning("Knowledge graph file %s doesn't exist yet. " 
+                           "No instruments information will be loaded.", 
+                           kg_conf_dict['path'])
         qres = graph.query(f"""
                         SELECT * WHERE {{
                             {t}
@@ -52,7 +54,7 @@ def kg_select(t, kg_conf_dict):
     return qres_js
 
 def get_instrs_from_kg(kg_conf_dict):
-    instruments = []
+    instruments = {}
     for r in kg_select('''
         ?w a <http://odahub.io/ontology#WorkflowService>;
         <http://odahub.io/ontology#deployment_name> ?deployment_name;
