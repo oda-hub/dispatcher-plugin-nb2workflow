@@ -8,13 +8,14 @@ import yaml
 import requests
 import rdflib as rdf
 import os
+from itertools import chain
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 def kg_select(t, kg_conf_dict):
-    if kg_conf_dict is None:
+    if kg_conf_dict is None or kg_conf_dict == {}:
         logger.info('Not using KG to get instruments')
         qres_js = []
     elif kg_conf_dict.get('type') == 'query-service':
@@ -75,10 +76,9 @@ def get_instrs_from_kg(kg_conf_dict):
 def get_instr_conf(from_conf_file=None):
     masked_conf_file = from_conf_file
     
-    # current default - query central oda kb 
-    # TODO: better default will be some regullary updated static location
-    kg_conf_dict = {'type': 'query-service',  
-                    'path': "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"}
+    # kg_conf_dict = {'type': 'query-service',  
+    #                 'path': "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"}
+    kg_conf_dict = {}
     cfg_dict = {'instruments': {}}
     
     if from_conf_file is not None:
@@ -155,4 +155,4 @@ class NB2WInstrumentFactoryIter:
                     
 instr_factory_list = [ factory_factory(instr_name, instr_conf.get('restricted_access', False)) 
                        for instr_name, instr_conf in 
-                       config_dict['instruments'].items() + config_dict['kg_instruments'].items() ]
+                       chain(config_dict['instruments'].items(), config_dict['kg_instruments'].items())]

@@ -16,7 +16,7 @@ class NB2WDataDispatcher:
                                                        allowed_keys = ['restricted_access'])
             except:
                 #this happens if the instrument is not found in the instrument config, which is always read from a static file
-                config = DataServerConf.from_conf_dict(exposer.get_instr_conf()['instruments'][iname])
+                config = DataServerConf.from_conf_dict(exposer.get_instr_conf()[0]['kg_instruments'][iname])
             
         self.data_server_url = config.data_server_url
         self.task = task
