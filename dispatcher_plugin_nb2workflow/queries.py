@@ -10,27 +10,22 @@ from .products import (NB2WProduct,
 from .dataserver_dispatcher import NB2WDataDispatcher
 from cdci_data_analysis.analysis.ontology import Ontology
 import os
-from functools import lru_cache
+from functools import lru_cache, wraps
 from json import dumps
-from copy import copy
+from copy import deepcopy
 
 class HashableDict(dict):
     def __hash__(self):
         return hash(dumps(self, sort_keys=True))
 
-def copying_lru_cache(func):
-    def wrapper(backend_param_dict, ontology_path):
-        cached_func = lru_cache()(func)
-        return copy(cached_func(backend_param_dict, ontology_path))
-    return wrapper
-
 def with_hashable_dict(func):
+    @wraps(func)
     def wrapper(backend_param_dict, ontology_path):
         return func(HashableDict(backend_param_dict), ontology_path)
     return wrapper
 
 @with_hashable_dict
-@copying_lru_cache
+@lru_cache
 def construct_parameter_lists(backend_param_dict, ontology_path):
     src_query_pars_uris = { "http://odahub.io/ontology#PointOfInterestRA": "RA",
                             "http://odahub.io/ontology#PointOfInterestDEC": "DEC",
@@ -84,7 +79,7 @@ class NB2WSourceQuery(BaseQuery):
         parameters_dict = {}
         for product_name in product_names:
             backend_param_dict = backend_options[product_name]['parameters']
-            prod_source_plist = construct_parameter_lists(backend_param_dict, ontology_path)['source_plist']
+            prod_source_plist = deepcopy(construct_parameter_lists(backend_param_dict, ontology_path)['source_plist'])
             for par in prod_source_plist:
                 parameters_dict[par.name] = par
         parameters_list = list(parameters_dict.values())
@@ -97,7 +92,7 @@ class NB2WProductQuery(ProductQuery):
         self.backend_output_dict = backend_output_dict
         parameter_lists = construct_parameter_lists(backend_param_dict, ontology_path)
         self.par_name_substitution = parameter_lists['par_name_substitution']
-        plist = parameter_lists['prod_plist']
+        plist = deepcopy(parameter_lists['prod_plist'])
         self.ontology_path = ontology_path
         super().__init__(name, parameters_list = plist)
 
