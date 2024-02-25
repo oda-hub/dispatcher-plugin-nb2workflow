@@ -29,6 +29,7 @@ class NB2WDataDispatcher:
         try:
             options_dict = self._backend_options
         except AttributeError:
+            exceptions = []
             url = self.data_server_url.strip('/') + '/api/v1.0/options'
             for i in range(max_trial):
                 try:
@@ -44,9 +45,10 @@ class NB2WDataDispatcher:
                                            f"Response: {res.text}")
                 except Exception as e:
                     backend_available = False
+                    exceptions.append(e)
                     time.sleep(sleep_seconds)
             if not backend_available:
-                raise e
+                raise exceptions[-1]
             
             self._backend_options = options_dict
         return options_dict
