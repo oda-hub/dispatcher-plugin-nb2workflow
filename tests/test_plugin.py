@@ -734,6 +734,10 @@ def test_added_in_kg(conf_file, dispatcher_live_fixture):
 
     try:
         tmpkg = '/tmp/example-kg.ttl'
+        
+        with open('tests/example-kg.ttl') as fd:
+            orig_kg = fd.read()
+            
         shutil.copy('tests/example-kg.ttl', tmpkg)
             
         with open(conf_file, 'w') as fd:
@@ -742,22 +746,28 @@ def test_added_in_kg(conf_file, dispatcher_live_fixture):
         server = dispatcher_live_fixture
         logger.info("constructed server: %s", server)
 
+        # reload to read config
         c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
         assert c.status_code == 200 
         
-        params = {'instrument': 'mock'}
-            
-        c = requests.get(server + "/instr-list",
-                        params = params)
-        logger.info("content: %s", c.text)
-        jdata = c.json()
-        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
-        logger.info(jdata)
-        assert c.status_code == 200
-        assert 'kgprod' in jdata
+        def assert_instruments(available, not_available):
+            params = {'instrument': 'mock'}    
+            c = requests.get(server + "/instr-list",
+                            params = params)
+            logger.info("content: %s", c.text)
+            jdata = c.json()
+            logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+            logger.info(jdata)
+            assert c.status_code == 200
+            for av in available:
+                assert av in jdata
+            for nav in not_available:
+                assert nav not in jdata
+
+        assert_instruments(['kgprod'], ['kgprod1'])
         
         with open(tmpkg, 'a') as fd:
-            tmpkg.write(dedent('''
+            fd.write(dedent('''
                 <https://path.to/prod1.git> a oda:Workflow,
                     oda:WorkflowService,
                     oda:workflow ;
@@ -767,17 +777,16 @@ def test_added_in_kg(conf_file, dispatcher_live_fixture):
                     sdo:creativeWorkStatus "production" .
                 '''))
         
-        c = requests.get(server + "/instr-list",
-                        params = params)
-        logger.info("content: %s", c.text)
-        jdata = c.json()
-        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
-        logger.info(jdata)
-        assert c.status_code == 200
-        assert 'kgprod' in jdata
-        assert 'kgprod1' in jdata
-            
+        assert_instruments(['kgprod', 'kgprod1'], [])
+        
+        with open(tmpkg, 'w') as fd:
+            fd.write(orig_kg)
+        
+        assert_instruments(['kgprod'], ['kgprod1'])
+        
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
         os.remove(tmpkg)
+
+# TODO: test_instrument_parameters kg-based (not in static file). (Means instrument factory is properly built.)
