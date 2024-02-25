@@ -95,7 +95,7 @@ def get_instr_conf(from_conf_file=None):
             else:
                 masked_conf_file = None
     
-    cfg_dict['kg_instruments'].update(get_instrs_from_kg(kg_conf_dict))
+    cfg_dict['kg_instruments'] = get_instrs_from_kg(kg_conf_dict)
     
     return cfg_dict, masked_conf_file
 
