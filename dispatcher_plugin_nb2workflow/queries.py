@@ -32,7 +32,7 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
                             "http://odahub.io/ontology#StartTime": "T1",
                             "http://odahub.io/ontology#EndTime": "T2",
                             "http://odahub.io/ontology#AstrophysicalObject": "src_name",
-                            #"ThisNameShouldNotExist": "token"
+                            "ThisNameShouldNotExist": "token"
                           }
     par_name_substitution = {}
 

@@ -371,9 +371,10 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
                           
                           ({'visible_band': 'z'}, {'visible_band': 'z'}, True),
                           
-                          ({'energy': 1000}, {'energy': 1000}, True)
+                          ({'energy': 1000}, {'energy': 1000}, True),
+                          ({'token_rename': 'aZH17bvYmP0r'}, {'token': 'aZH17bvYmP0r'}, False),
                           ])
-def test_full_stack(live_nb2service,
+def test_echo_params(live_nb2service,
                     conf_file, 
                     dispatcher_live_fixture,  
                     set_param, 
@@ -401,7 +402,8 @@ def test_full_stack(live_nb2service,
                           'radius': 3.0, 
                           'start_time': 56000.0, 
                           'time_instant': '2017-08-17T12:43:00.000', 
-                          'visible_band': 'v'}
+                          'visible_band': 'v',
+                          'token': "XGDSgs2KYqHr"}
         request_params = {}
         expected_params = default_in_params.copy()
         
@@ -867,3 +869,4 @@ def test_kg_based_instrument_parameters(conf_file, dispatcher_live_fixture, capl
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
         os.remove(tmpkg)
+
