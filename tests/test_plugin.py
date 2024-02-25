@@ -2,6 +2,8 @@ import json
 import logging
 import requests
 from oda_api.data_products import PictureProduct, ImageDataProduct
+import shutil
+from textwrap import dedent
 import time
 import jwt
 import pytest
@@ -274,20 +276,6 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     assert c.status_code == 200
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
-
-def test_default_kg(dispatcher_live_fixture):  
-    server = dispatcher_live_fixture
-    logger.info("constructed server: %s", server)
-
-    c = requests.get(server + "/instr-list",
-                    params = {'instrument': 'mock', 
-                              'token': encoded_token})
-    logger.info("content: %s", c.text)
-    jdata = c.json()
-    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
-    logger.info(jdata)
-    assert c.status_code == 200 
-    assert 'lightcurve-example' in jdata # TODO: change to what will be used in docs
 
 @pytest.mark.parametrize("privileged", [True, False])
 def test_local_kg(conf_file, dispatcher_live_fixture, privileged):  
@@ -739,3 +727,57 @@ def test_structured_default_value_preservation(live_nb2service,
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
+
+def test_added_in_kg(conf_file, dispatcher_live_fixture):  
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        tmpkg = '/tmp/example-kg.ttl'
+        shutil.copy('tests/example-kg.ttl', tmpkg)
+            
+        with open(conf_file, 'w') as fd:
+            fd.write(config_local_kg.replace('tests', '/tmp'))
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        params = {'instrument': 'mock'}
+            
+        c = requests.get(server + "/instr-list",
+                        params = params)
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200
+        assert 'kgprod' in jdata
+        
+        with open(tmpkg, 'a') as fd:
+            tmpkg.write(dedent('''
+                <https://path.to/prod1.git> a oda:Workflow,
+                    oda:WorkflowService,
+                    oda:workflow ;
+                    oda:deployment_name "kgprod1-workflow-backend" ;
+                    oda:deployment_namespace "oda-staging" ;
+                    oda:service_name "kgprod1" ;
+                    sdo:creativeWorkStatus "production" .
+                '''))
+        
+        c = requests.get(server + "/instr-list",
+                        params = params)
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200
+        assert 'kgprod' in jdata
+        assert 'kgprod1' in jdata
+            
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+        os.remove(tmpkg)
