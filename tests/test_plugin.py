@@ -462,7 +462,7 @@ def test_parameter_output(live_nb2service,
                           ('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
                           ('timeinst', 56457.0, 'http://odahub.io/ontology#TimeInstantMJD'),
                           ('timeisot',
-                          '2022-10-09T13:00:00.000',
+                          '2022-10-09T13:00:00',
                           'http://odahub.io/ontology#TimeInstantISOT'),
                           ('wrng', 'FOO', 'http://odahub.io/ontology#PhotometricBand')]
         
