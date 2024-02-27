@@ -19,7 +19,7 @@ from pytest_httpserver.httpserver import MappingQueryMatcher
 config_one_instrument = """    
 instruments:
   example0:
-    data_server_url: http://localhost:9494
+    data_server_url: http://localhost:8000
     dummy_cache: ""
 """
 
@@ -40,7 +40,7 @@ def get_backend_status():
 
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
-    return ("127.0.0.1", 9494)
+    return ("127.0.0.1", 8000)
 
 
 def lightcurve_handler(request: Request):

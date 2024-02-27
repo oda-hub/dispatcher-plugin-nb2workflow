@@ -2,6 +2,8 @@ import json
 import logging
 import requests
 from oda_api.data_products import PictureProduct, ImageDataProduct
+import shutil
+from textwrap import dedent
 import time
 import jwt
 import pytest
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 config_two_instruments = """    
 instruments:
   example0:
-    data_server_url: http://localhost:9494
+    data_server_url: http://localhost:8000
     dummy_cache: ""
   example1:
     data_server_url: http://localhost:9595
@@ -275,20 +277,38 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
-def test_default_kg(dispatcher_live_fixture):  
-    server = dispatcher_live_fixture
-    logger.info("constructed server: %s", server)
-
-    c = requests.get(server + "/instr-list",
-                    params = {'instrument': 'mock', 
-                              'token': encoded_token})
-    logger.info("content: %s", c.text)
-    jdata = c.json()
-    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
-    logger.info(jdata)
-    assert c.status_code == 200 
-    assert 'lightcurve-example' in jdata # TODO: change to what will be used in docs
-
+def test_external_service_kg(conf_file, dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+        
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write(dedent("""
+                            kg:
+                              type: "query-service"
+                              path: "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"
+                            """))
+    
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+            
+        c = requests.get(server + "/instr-list",
+                        params = {'instrument': 'mock', 
+                                'token': encoded_token})
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200 
+        assert 'lightcurve-example' in jdata # TODO: change to what will be used in docs
+    
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+            
+            
 @pytest.mark.parametrize("privileged", [True, False])
 def test_local_kg(conf_file, dispatcher_live_fixture, privileged):  
     with open(conf_file, 'r') as fd:
@@ -351,9 +371,10 @@ def test_local_kg(conf_file, dispatcher_live_fixture, privileged):
                           
                           ({'visible_band': 'z'}, {'visible_band': 'z'}, True),
                           
-                          ({'energy': 1000}, {'energy': 1000}, True)
+                          ({'energy': 1000}, {'energy': 1000}, True),
+                          ({'token_rename': 'aZH17bvYmP0r'}, {'token': 'aZH17bvYmP0r'}, False),
                           ])
-def test_full_stack(live_nb2service,
+def test_echo_params(live_nb2service,
                     conf_file, 
                     dispatcher_live_fixture,  
                     set_param, 
@@ -381,7 +402,8 @@ def test_full_stack(live_nb2service,
                           'radius': 3.0, 
                           'start_time': 56000.0, 
                           'time_instant': '2017-08-17T12:43:00.000', 
-                          'visible_band': 'v'}
+                          'visible_band': 'v',
+                          'token': "XGDSgs2KYqHr"}
         request_params = {}
         expected_params = default_in_params.copy()
         
@@ -440,7 +462,7 @@ def test_parameter_output(live_nb2service,
                           ('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
                           ('timeinst', 56457.0, 'http://odahub.io/ontology#TimeInstantMJD'),
                           ('timeisot',
-                          '2022-10-09T13:00:00.000',
+                          '2022-10-09T13:00:00',
                           'http://odahub.io/ontology#TimeInstantISOT'),
                           ('wrng', 'FOO', 'http://odahub.io/ontology#PhotometricBand')]
         
@@ -638,3 +660,213 @@ def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
     logger.info(jdata)
     assert jdata['job_status'] == 'done'
     assert 'progress_product_html_output' not in jdata['products']
+
+
+def test_default_value_preservation(dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+    
+    def get_param_default():
+        c = requests.get(server + "/api/meta-data",
+                        params = {'instrument': 'example0'})
+        assert c.status_code == 200
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(jdata)
+        
+        for x in jdata[0]:
+            if isinstance(x, dict):
+                continue
+            elif isinstance(x, list):
+                # if we finally decide to output it non-encoded at some point
+                pass
+            else:
+                x = json.loads(x)
+            
+            if {"query_name": "table_query"} in x:
+                some_param_value = x[2]['value']
+        return some_param_value
+    
+    some_param_value = get_param_default()
+    
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'table',
+              'some_param': 5,
+              'run_asynch': False}
+    c = requests.get(server + "/run_analysis",
+                    params = params)
+    assert c.status_code == 200    
+            
+    new_param_value = get_param_default()
+    
+    assert new_param_value == some_param_value
+
+@pytest.mark.fullstack
+def test_structured_default_value_preservation(live_nb2service,
+                                               conf_file, 
+                                               dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        def get_param_default():
+            c = requests.get(server + "/api/meta-data",
+                            params = {'instrument': 'example'})
+            assert c.status_code == 200
+            logger.info("content: %s", c.text)
+            jdata = c.json()
+            logger.info(jdata)
+            
+            for x in jdata[0]:
+                if isinstance(x, dict):
+                    continue
+                elif isinstance(x, list):
+                    # if we finally decide to output it non-encoded at some point
+                    pass
+                else:
+                    x = json.loads(x)
+                
+                if {"query_name": "structured_query"} in x:
+                    param_value = x[2]['value']
+            return param_value
+        
+        struct_par_value = get_param_default()
+
+        params = {'instrument': 'example',
+                'query_status': 'new',
+                'query_type': 'Real',
+                'product_type': 'structured',
+                'struct_par': '{"col4": ["spam", "ham"]}',
+                'run_asynch': False}
+        c = requests.get(server + "/run_analysis",
+                        params = params)
+        assert c.status_code == 200    
+                
+        new_param_value = get_param_default()
+        
+        assert new_param_value == struct_par_value
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+
+def test_added_in_kg(conf_file, dispatcher_live_fixture):  
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        tmpkg = '/tmp/example-kg.ttl'
+        
+        with open('tests/example-kg.ttl') as fd:
+            orig_kg = fd.read()
+            
+        shutil.copy('tests/example-kg.ttl', tmpkg)
+            
+        with open(conf_file, 'w') as fd:
+            fd.write(config_local_kg.replace('tests', '/tmp'))
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+
+        # reload to read config
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        def assert_instruments(available, not_available):
+            params = {'instrument': 'mock'}    
+            c = requests.get(server + "/instr-list",
+                            params = params)
+            logger.info("content: %s", c.text)
+            jdata = c.json()
+            logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+            logger.info(jdata)
+            assert c.status_code == 200
+            for av in available:
+                assert av in jdata
+            for nav in not_available:
+                assert nav not in jdata
+
+        assert_instruments(['kgprod'], ['kgprod1'])
+        
+        with open(tmpkg, 'a') as fd:
+            fd.write(dedent('''
+                <https://path.to/prod1.git> a oda:WorkflowService;
+                    oda:deployment_name "kgprod1-workflow-backend" ;
+                    oda:service_name "kgprod1" ;
+                    sdo:creativeWorkStatus "production" .
+                '''))
+        
+        assert_instruments(['kgprod', 'kgprod1'], [])
+        
+        with open(tmpkg, 'w') as fd:
+            fd.write(orig_kg)
+        
+        assert_instruments(['kgprod'], ['kgprod1'])
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+        os.remove(tmpkg)
+
+def test_kg_based_instrument_parameters(conf_file, dispatcher_live_fixture, caplog, mock_backend):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        tmpkg = '/tmp/example-kg.ttl'
+        
+        with open(conf_file, 'w') as fd:
+            fd.write(dedent(f"""
+                             kg:
+                               type: "file"
+                               path: "{tmpkg}"
+                             """
+                            ))
+            
+        with open(tmpkg, 'w') as fd:    
+            fd.write(dedent("""
+                            @prefix oda: <http://odahub.io/ontology#> .
+                            @prefix sdo: <https://schema.org/> .
+
+                            <https://path.to/repo.git> a oda:WorkflowService;
+                                oda:deployment_name "localhost" ;
+                                oda:service_name "example0" ;
+                                sdo:creativeWorkStatus "production" .
+                            """))
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+
+        # reload to read config
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        c = requests.get(server + "/api/par-names",
+                         params = {'instrument': 'example0'})
+        logger.info("content: %s", c.text)
+        jdata = c.json()
+        logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+        logger.info(jdata)
+        assert c.status_code == 200
+        assert sorted(jdata) == sorted(expected_arguments)
+        assert "will be discarded for the instantiation" not in caplog.text
+        assert "Possibly a programming error" not in caplog.text
+        
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+        os.remove(tmpkg)
+

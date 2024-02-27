@@ -5,7 +5,8 @@ import json
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
-from .util import AstropyTableViewParser, ParProdOntology
+from .util import AstropyTableViewParser
+from cdci_data_analysis.analysis.ontology import Ontology
 from io import StringIO
 from functools import lru_cache  
 from mimetypes import guess_extension
@@ -110,7 +111,7 @@ class NB2WParameterProduct(NB2WProduct):
     type_key = 'oda:WorkflowParameter'
     
     ontology_path = None
-    
+        
     def __init__(self, 
                  value, 
                  out_dir=None, 
@@ -132,11 +133,11 @@ class NB2WParameterProduct(NB2WProduct):
 @lru_cache
 def parameter_products_factory(ontology_path = None):
     classes = []
-    onto = ParProdOntology(ontology_path)
+    onto = Ontology(ontology_path)
     for term in onto.get_parprod_terms():
         classes.append(type(f"{term.split('#')[-1]}Product", 
                             (NB2WParameterProduct,), 
-                            {'type_key': term, 'ontology_path': ontology_path}))
+                            {'type_key': term, 'ontology_object': onto}))
     return classes
         
 

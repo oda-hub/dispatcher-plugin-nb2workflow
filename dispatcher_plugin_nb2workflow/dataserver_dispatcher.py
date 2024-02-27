@@ -6,22 +6,19 @@ from . import exposer
 from urllib.parse import urlsplit, parse_qs, urlencode
 import os
 from glob import glob
+import logging
+
+logger = logging.getLogger()
 
 class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
         iname = instrument if isinstance(instrument, str) else instrument.name
         if config is None:
-            try:
-                config = DataServerConf.from_conf_dict(exposer.config_dict['instruments'][iname], 
-                                                       allowed_keys = ['restricted_access'])
-            except:
-                #this happens if the instrument is not found in the instrument config, which is always read from a static file
-                config = DataServerConf.from_conf_dict(exposer.get_instr_conf()['instruments'][iname])
+            config = DataServerConf.from_conf_dict(exposer.combined_instrument_dict[iname])
             
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict
-        self.backend_options = self.query_backend_options()
         
         self.external_disp_url = None 
         if not isinstance(instrument, str): # TODO: seems this is always the case. But what if not?
@@ -30,19 +27,32 @@ class NB2WDataDispatcher:
             if parsed.scheme and parsed.netloc:
                 self.external_disp_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
         
-            
-    def query_backend_options(self):
-        url = self.data_server_url.strip('/') + '/api/v1.0/options'
+    @property
+    def backend_options(self, max_trial=5, sleep_seconds=5):
         try:
-            res = requests.get("%s" % (url), params=None)
-        except:
-            return {}
-        if res.status_code == 200:
-            options_dict = res.json()
-        else:
-            return {}
-            raise ConnectionError(f"Backend connection failed: {res.status_code}")
-            # TODO: consecutive requests if failed
+            options_dict = self._backend_options
+        except AttributeError:
+            url = self.data_server_url.strip('/') + '/api/v1.0/options'
+            for i in range(max_trial):
+                try:
+                    res = requests.get("%s" % (url), params=None)
+
+                    if res.status_code == 200:
+                        options_dict = res.json()
+                        backend_available = True
+                        break
+                    else:
+                        raise RuntimeError("Backend options request failed. " 
+                                           f"Exit code: {res.status_code}. "
+                                           f"Response: {res.text}")
+                except Exception as e:
+                    backend_available = False
+                    logger.error(f"Exception while getting backend options {repr(e)}")
+                    time.sleep(sleep_seconds)
+            if not backend_available:
+                return {}
+            
+            self._backend_options = options_dict
         return options_dict
         
     def get_backend_comment(self, product):
@@ -56,7 +66,7 @@ class NB2WDataDispatcher:
         
     def test_communication(self, max_trial=10, sleep_s=1, logger=None):
         print('--> start test connection')
-
+        
         query_out = QueryOutput()
         no_connection = True
         excep = Exception()
