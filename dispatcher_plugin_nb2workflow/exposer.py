@@ -60,7 +60,7 @@ def get_static_instr_conf(conf_file):
     # kg_conf_dict = {'type': 'query-service',  
     #                 'path': "https://www.astro.unige.ch/mmoda/dispatch-data/gw/odakb/query"}
     
-    cfg_dict = {'instruments': {}, 'kg': {}}
+    cfg_dict = {'instruments': {}, 'kg': {}, 'include_glued_output': True}
     
     if conf_file is not None:
         with open(conf_file, 'r') as ymlfile:
@@ -75,6 +75,8 @@ def get_static_instr_conf(conf_file):
                     cfg_dict['ontology_path'] = f_cfg_dict['ontology_path']
                 if 'kg' in f_cfg_dict.keys():
                     cfg_dict['kg'] = f_cfg_dict['kg']
+                if 'include_glued_output' in f_cfg_dict.keys():
+                    cfg_dict['include_glued_output'] = f_cfg_dict['include_glued_output']
             else:
                 masked_conf_file = None
     return cfg_dict, masked_conf_file

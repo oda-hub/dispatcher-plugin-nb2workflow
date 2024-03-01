@@ -15,7 +15,8 @@ class NB2WDataDispatcher:
         iname = instrument if isinstance(instrument, str) else instrument.name
         if config is None:
             config = DataServerConf.from_conf_dict(exposer.combined_instrument_dict[iname])
-            
+
+        self.include_glued_output = exposer.static_config_dict.get('include_glued_output', True)
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict
@@ -137,7 +138,10 @@ class NB2WDataDispatcher:
                 if jobdir is not None:
                     jobdir = jobdir.split('/')[-1]
                     trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
-                    res_trace = requests.get(trace_url)
+                    query_string = {}
+                    if not self.include_glued_output:
+                        query_string = {'include_glued_output': False}
+                    res_trace = requests.get(trace_url, params=query_string)
                     res_trace_dict = {
                         'res': res_trace,
                         'progress_product': True

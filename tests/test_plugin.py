@@ -545,6 +545,32 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
 
 
+def test_return_progress_no_glued_output(set_env_var_plugin_config_no_glued_output_file_path, dispatcher_live_fixture, mock_backend):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+    set_backend_status('')
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'api': 'True',
+              'return_progress': True}
+
+    c = requests.get(os.path.join(server, "run_analysis"),
+                     params=params)
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert 'progress_product_list' in jdata['products']
+    with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output_no_glue_output.html'), 'r') as fd:
+        test_output_html = fd.read()
+
+    assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
+
+
 @pytest.mark.parametrize("api", [True, False])
 def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
     server = dispatcher_live_fixture
