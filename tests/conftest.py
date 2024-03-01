@@ -1,22 +1,31 @@
 from cdci_data_analysis.pytest_fixtures import (
-            dispatcher_live_fixture, 
             dispatcher_debug,
-            dispatcher_test_conf,
             dispatcher_test_conf_fn,
-            app
+            dispatcher_live_fixture
         )
 import pytest
 import json
 import os
+import signal
 from xprocess import ProcessStarter
 import requests
 from urllib.parse import urlparse, parse_qs
 from werkzeug.wrappers import Request
 from werkzeug.wrappers import Response
+from bs4 import BeautifulSoup
 
 from pytest_httpserver.httpserver import MappingQueryMatcher
 
-config_one_instrument = """    
+config_one_instrument = """   
+include_glued_output: True
+instruments:
+  example0:
+    data_server_url: http://localhost:8000
+    dummy_cache: ""
+"""
+
+config_one_instrument_no_glued_output = """
+include_glued_output: False
 instruments:
   example0:
     data_server_url: http://localhost:8000
@@ -67,6 +76,22 @@ def lightcurve_handler(request: Request):
             return Response(response_data, status=200, content_type='application/json')
 
 
+def trace_get_func_handler(request: Request):
+    parsed_request_query = parse_qs(urlparse(request.url).query)
+    include_glued_output = parsed_request_query.get('include_glued_output', ['True']) == ['True']
+    responses_path = os.path.join(os.path.dirname(__file__), 'responses')
+
+    output_html_file = 'test_output.html'
+
+    if not include_glued_output:
+        output_html_file = 'test_output_no_glue_output.html'
+
+    with open(os.path.join(responses_path, output_html_file), 'r') as fd:
+        test_output_content = fd.read()
+
+    return Response(test_output_content, status=200)
+
+
 @pytest.fixture
 def mock_backend(httpserver):
     responses_path = os.path.join(os.path.dirname(__file__), 'responses')
@@ -78,8 +103,8 @@ def mock_backend(httpserver):
         bin_json = json.loads(fd.read())
     with open(os.path.join(responses_path, 'image.json'), 'r') as fd:
         image_json = json.loads(fd.read())
-    with open(os.path.join(responses_path, 'test_output.html'), 'r') as fd:
-        test_output_html = fd.read()
+    # with open(os.path.join(responses_path, 'test_output.html'), 'r') as fd:
+    #     test_output_html = fd.read()
         
     httpserver.expect_request('/').respond_with_data('')    
     httpserver.expect_request(f'/api/v1.0/options').respond_with_json(respjson)
@@ -87,13 +112,22 @@ def mock_backend(httpserver):
     httpserver.expect_request(f'/api/v1.0/get/table').respond_with_json(table_json)
     httpserver.expect_request(f'/api/v1.0/get/ascii_binary').respond_with_json(bin_json)
     httpserver.expect_request(f'/api/v1.0/get/image').respond_with_json(image_json)
-    httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_data(test_output_html)
+    # httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_data(test_output_html)
+    httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_handler(trace_get_func_handler)
 
 @pytest.fixture(scope='session')
 def conf_file(tmp_path_factory):
     d = tmp_path_factory.mktemp('nb2wconf')
     fn = d / 'plugin_conf.yml'
     fn.write_text(config_one_instrument)
+    yield str(fn.resolve())
+
+
+@pytest.fixture(scope='session')
+def conf_file_no_glued_output(tmp_path_factory):
+    d = tmp_path_factory.mktemp('nb2wconf')
+    fn = d / 'plugin_conf.yml'
+    fn.write_text(config_one_instrument_no_glued_output)
     yield str(fn.resolve())
 
 # @pytest.fixture
@@ -105,10 +139,20 @@ def set_env_var_plugin_config_file_path(conf_file):
     old_environ = dict(os.environ)
     os.environ['CDCI_NB2W_PLUGIN_CONF_FILE'] = conf_file
     yield
-    
+
     os.environ.clear()
     os.environ.update(old_environ)
-    
+
+
+@pytest.fixture
+def set_env_var_plugin_config_no_glued_output_file_path(conf_file_no_glued_output):
+    old_environ = dict(os.environ)
+    os.environ['CDCI_NB2W_PLUGIN_CONF_FILE'] = conf_file_no_glued_output
+    yield
+    os.environ.clear()
+    os.environ.update(old_environ)
+
+
 @pytest.fixture(scope="session")
 def live_nb2service(xprocess):
     wd = os.getcwd()
