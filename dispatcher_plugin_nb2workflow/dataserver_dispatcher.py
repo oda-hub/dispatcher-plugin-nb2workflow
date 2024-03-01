@@ -16,7 +16,7 @@ class NB2WDataDispatcher:
         if config is None:
             config = DataServerConf.from_conf_dict(exposer.combined_instrument_dict[iname])
 
-        self.include_glued_output = exposer.static_config_dict['include_glued_output']
+        self.include_glued_output = exposer.static_config_dict.get('include_glued_output', True)
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict
