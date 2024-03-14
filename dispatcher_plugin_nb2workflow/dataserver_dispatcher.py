@@ -185,24 +185,38 @@ class NB2WDataDispatcher:
 
         spl_cb_url = urlsplit(call_back_url)
         qpars = parse_qs(spl_cb_url[3])
-        session_id = qpars['session_id']
-        job_id = qpars['job_id']
-        token = qpars['token']
-        instrument_name = qpars['instrument_name']
+        session_id = qpars['session_id'][0]
+        job_id = qpars['job_id'][0]
+        token = qpars['token'][0]
+        instrument_name = qpars['instrument_name'][0]
+
+        print('backend_options: ', self.backend_options)
+        print('param_dict: ', param_dict)
+        print('instrument_name: ', instrument_name)
+        print('task: ', task)
+        print('job_id: ', job_id)
+        print('session_id: ', session_id)
 
         for param in param_dict:
             param_obj = self.backend_options[task]['parameters'].get(param, None)
             # TODO improve this check, is it enough?
-            if param_obj is not None and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath":
+            if param_obj is not None \
+                    and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
+                    and param_dict[param] != '':
                 dpars = urlencode(dict(session_id=session_id,
                                        job_id=job_id,
                                        file_list=param,
                                        query_status="ready",
                                        instrument=instrument_name,
                                        token=token))
-                basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
+                if self.external_disp_url is not None:
+                    basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
+                else:
+                    basepath = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_file')}"
                 download_file_url = f"{basepath}?{dpars}"
                 param_dict[param] = download_file_url
+
+        print('param_dict: ', param_dict)
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
