@@ -194,7 +194,6 @@ class NB2WDataDispatcher:
             param_obj = self.backend_options[task]['parameters'].get(param, None)
             # TODO improve this check, is it enough?
             if param_obj is not None and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath":
-                print("build here download url")
                 dpars = urlencode(dict(session_id=session_id,
                                        job_id=job_id,
                                        file_list=param,
