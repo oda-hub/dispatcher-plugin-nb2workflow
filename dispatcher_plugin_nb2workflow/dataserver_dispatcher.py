@@ -192,8 +192,8 @@ class NB2WDataDispatcher:
 
         for param in param_dict:
             param_obj = self.backend_options[task]['parameters'].get(param, None)
-            # TODO improve this check
-            if param_obj is not None and param_obj.get('owl_type') == "http://odahub.io/ontology#FileReference":
+            # TODO improve this check, is it enough?
+            if param_obj is not None and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath":
                 print("build here download url")
                 dpars = urlencode(dict(session_id=session_id,
                                        job_id=job_id,
@@ -201,7 +201,7 @@ class NB2WDataDispatcher:
                                        query_status="ready",
                                        instrument=instrument_name,
                                        token=token), doseq=True)
-                basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_products')
+                basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
                 download_file_url = f"{basepath}?{dpars}"
                 param_dict[param] = download_file_url
 
