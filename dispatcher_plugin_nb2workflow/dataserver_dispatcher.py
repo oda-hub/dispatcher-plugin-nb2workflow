@@ -199,7 +199,7 @@ class NB2WDataDispatcher:
                                        file_list=param,
                                        query_status="ready",
                                        instrument=instrument_name,
-                                       token=token), doseq=True)
+                                       token=token))
                 basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
                 download_file_url = f"{basepath}?{dpars}"
                 param_dict[param] = download_file_url
