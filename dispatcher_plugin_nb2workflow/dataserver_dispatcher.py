@@ -52,7 +52,7 @@ class NB2WDataDispatcher:
                     time.sleep(sleep_seconds)
             if not backend_available:
                 return {}
-            
+
             self._backend_options = options_dict
         return options_dict
         
@@ -177,11 +177,33 @@ class NB2WDataDispatcher:
             task=self.task     
 
         if param_dict is None:
-            param_dict=self.param_dict   
-        
+            param_dict=self.param_dict
+
         if run_asynch:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
+
+        spl_cb_url = urlsplit(call_back_url)
+        qpars = parse_qs(spl_cb_url[3])
+        session_id = qpars['session_id']
+        job_id = qpars['job_id']
+        token = qpars['token']
+        instrument_name = qpars['instrument_name']
+
+        for param in param_dict:
+            param_obj = self.backend_options[task]['parameters'].get(param, None)
+            # TODO improve this check
+            if param_obj is not None and param_obj.get('owl_type') == "http://odahub.io/ontology#FileReference":
+                print("build here download url")
+                dpars = urlencode(dict(session_id=session_id,
+                                       job_id=job_id,
+                                       file_list=param,
+                                       query_status="ready",
+                                       instrument=instrument_name,
+                                       token=token), doseq=True)
+                basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_products')
+                download_file_url = f"{basepath}?{dpars}"
+                param_dict[param] = download_file_url
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
@@ -202,15 +224,15 @@ class NB2WDataDispatcher:
                     nb_html_fn = f'{task.strip("/")}_output.html'
                 
                     # it's hacky but it works
-                    spl_cb_url = urlsplit(call_back_url)
-                    qpars = parse_qs(spl_cb_url[3])
-                    dpars = urlencode(dict(session_id=qpars['session_id'],
-                                        job_id=qpars['job_id'],
+                    # spl_cb_url = urlsplit(call_back_url)
+                    # qpars = parse_qs(spl_cb_url[3])
+                    dpars = urlencode(dict(session_id=session_id,
+                                        job_id=job_id,
                                         download_file_name=f"{nb_html_fn}.gz",
                                         file_list=nb_html_fn,
                                         query_status="failed",
-                                        instrument=qpars['instrument_name'],
-                                        token=qpars['token']), doseq=True)
+                                        instrument=instrument_name,
+                                        token=token), doseq=True)
                     
                     if self.external_disp_url is not None:
                         basepath = '/'.join([self.external_disp_url.rstrip('/'), 'dispatch-data/download_products'])
@@ -230,7 +252,7 @@ class NB2WDataDispatcher:
                                     message='Backend failed. ' + except_message,
                                     job_status='failed')
                 return res, query_out
-                    
+
             comment_name = self.get_backend_comment(task.strip('/'))
             comment_value = ''
             if comment_name:
