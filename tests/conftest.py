@@ -161,7 +161,9 @@ def live_nb2service(xprocess):
         timeout = 30
         max_read_lines = 10000 
         terminate_on_interrupt = True
-        args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
+        responses_path = os.path.join(os.path.dirname(__file__), 'example_nb')
+        args = ['nb2service', '--port', '9393', responses_path]
+        # args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
         def startup_check(self):
             try: 
                 res = requests.get('http://localhost:9393/')

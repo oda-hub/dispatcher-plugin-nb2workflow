@@ -11,7 +11,18 @@
                 "value": " astroim.encode() "
             }
         },
-        "parameters": {}
+        "parameters": {
+            "dummy_file": {
+                "comment": "",
+                "default_value": "",
+                "name": "dummy_file",
+                "owl_type": "http://odahub.io/ontology#POSIXPath",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": ""
+            }
+        }
     },
     "lightcurve": {
         "output": {
