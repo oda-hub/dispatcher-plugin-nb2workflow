@@ -564,7 +564,7 @@ def test_file_download(live_nb2service,
         disp = DispatcherAPI(url=server)
         with pytest.raises(RemoteException):
             prod = disp.get_product(instrument="example",
-                                    product="image"
+                                    product="file_download"
                                     )
 
         dpars = urlencode(dict(session_id=disp.session_id,

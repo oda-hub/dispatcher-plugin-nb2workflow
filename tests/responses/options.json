@@ -1,5 +1,5 @@
 {
-    "image": {
+    "file_download": {
         "output": {
             "result": {
                 "comment": " http://odahub.io/ontology#Image",
@@ -23,6 +23,20 @@
                 "value": ""
             }
         }
+    },
+    "image": {
+        "output": {
+            "result": {
+                "comment": " http://odahub.io/ontology#Image",
+                "name": "result",
+                "owl_type": "http://odahub.io/ontology#Image",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": " astroim.encode() "
+            }
+        },
+        "parameters": {}
     },
     "lightcurve": {
         "output": {
