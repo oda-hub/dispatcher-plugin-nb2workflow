@@ -127,6 +127,7 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
             prod_dict = elem['prod_dict']
     assert prod_dict == {'ascii_binary': 'ascii_binary_query',
                          'image': 'image_query',
+                         'file_download': 'file_download_query',
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
 
