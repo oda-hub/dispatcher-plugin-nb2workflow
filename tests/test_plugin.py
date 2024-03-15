@@ -14,7 +14,7 @@ import gzip
 import os
 from magic import from_buffer as mime_from_buffer
 from conftest import set_backend_status
-
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -543,7 +543,9 @@ def test_failed_nbhtml_download(live_nb2service,
 @pytest.mark.fullstack
 def test_file_download(live_nb2service,
                        conf_file,
-                       dispatcher_live_fixture):
+                       dispatcher_live_fixture,
+                       dispatcher_test_conf,
+                       caplog):
     with open(conf_file, 'r') as fd:
         conf_bk = fd.read()
 
@@ -554,18 +556,29 @@ def test_file_download(live_nb2service,
         server = dispatcher_live_fixture
         logger.info("constructed server: %s", server)
 
-        # ensure new conf file readed
+        # ensure new conf file is read
         c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
         assert c.status_code == 200
 
-        c = requests.get(server + "/run_analysis",
-                         params={'instrument': 'example',
-                                 'query_status': 'new',
-                                 'query_type': 'Real',
-                                 'product_type': 'image',
-                                 })
-        assert c.status_code == 200
-        jdata = c.json()
+        from oda_api.api import DispatcherAPI, RemoteException
+        disp = DispatcherAPI(url=server)
+        with pytest.raises(RemoteException):
+            prod = disp.get_product(instrument="example",
+                                    product="image"
+                                    )
+
+        dpars = urlencode(dict(session_id=disp.session_id,
+                               job_id=disp.job_id,
+                               file_list='dummy_file',
+                               query_status="ready",
+                               instrument='example',
+                               token=None))
+        download_url = f'{os.path.join(dispatcher_test_conf["dispatcher_callback_url_base"], "download_file")}?{dpars}'
+
+        assert (f'An issue occurred when attempting to download the url '
+                f'{download_url}, this might be related to an invalid url, please check the input provided') in caplog.text
+        print(f'caplog.text: {caplog.text}')
+
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)

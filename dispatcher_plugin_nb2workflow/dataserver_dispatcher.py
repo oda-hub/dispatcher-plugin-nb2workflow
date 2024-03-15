@@ -220,6 +220,7 @@ class NB2WDataDispatcher:
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
+        print("result inside run_query: ", res.json())
         if res.status_code == 200:
             resroot = res.json()['data'] if run_asynch else res.json()
             
