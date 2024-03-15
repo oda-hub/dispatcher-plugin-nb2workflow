@@ -45,6 +45,7 @@ instruments:
 expected_arguments = ["T1",
                       "T2",
                       "T_format",
+                      "dummy_file",
                       "token",
                       "seed",
                       "some_param"]
