@@ -183,44 +183,16 @@ class NB2WDataDispatcher:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
 
-        spl_cb_url = urlsplit(call_back_url)
-        qpars = parse_qs(spl_cb_url[3])
-        session_id = qpars['session_id'][0]
-        job_id = qpars['job_id'][0]
-        token = qpars['token'][0]
-        instrument_name = qpars['instrument_name'][0]
+        info_obj = self.extract_info_from_callback_url(call_back_url)
+        if self.external_disp_url is not None:
+            basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
+        else:
+            basepath = f"{info_obj['scheme']}://{info_obj['netloc']}{info_obj['path'].replace('call_back', 'download_file')}"
 
-        print('backend_options: ', self.backend_options)
-        print('param_dict: ', param_dict)
-        print('instrument_name: ', instrument_name)
-        print('task: ', task)
-        print('job_id: ', job_id)
-        print('session_id: ', session_id)
-
-        for param in param_dict:
-            param_obj = self.backend_options[task]['parameters'].get(param, None)
-            # TODO improve this check, is it enough?
-            if param_obj is not None \
-                    and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
-                    and param_dict[param] != '':
-                dpars = urlencode(dict(session_id=session_id,
-                                       job_id=job_id,
-                                       file_list=param,
-                                       query_status="ready",
-                                       instrument=instrument_name,
-                                       token=token))
-                if self.external_disp_url is not None:
-                    basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
-                else:
-                    basepath = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_file')}"
-                download_file_url = f"{basepath}?{dpars}"
-                param_dict[param] = download_file_url
-
-        print('param_dict: ', param_dict)
+        param_dict = self.update_param_dict_download_file_url(param_dict, task, info_obj['session_id'], info_obj['job_id'], info_obj['instrument_name'], info_obj['token'], basepath)
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
-        print("result inside run_query: ", res.json())
         if res.status_code == 200:
             resroot = res.json()['data'] if run_asynch else res.json()
             
@@ -238,24 +210,22 @@ class NB2WDataDispatcher:
                     nb_html_fn = f'{task.strip("/")}_output.html'
                 
                     # it's hacky but it works
-                    # spl_cb_url = urlsplit(call_back_url)
-                    # qpars = parse_qs(spl_cb_url[3])
-                    dpars = urlencode(dict(session_id=session_id,
-                                        job_id=job_id,
+                    dpars = urlencode(dict(session_id=info_obj['session_id'],
+                                        job_id=info_obj['job_id'],
                                         download_file_name=f"{nb_html_fn}.gz",
                                         file_list=nb_html_fn,
                                         query_status="failed",
-                                        instrument=instrument_name,
-                                        token=token), doseq=True)
+                                        instrument=info_obj['instrument_name'],
+                                        token=info_obj['token']), doseq=True)
                     
                     if self.external_disp_url is not None:
                         basepath = '/'.join([self.external_disp_url.rstrip('/'), 'dispatch-data/download_products'])
                     else:
-                        basepath = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_products')}"
+                        basepath = f"{info_obj['scheme']}://{info_obj['netloc']}{info_obj['path'].replace('call_back', 'download_products')}"
                     
                     download_url = f"{basepath}?{dpars}"
                     
-                    wdir = glob(f"scratch_sid_{qpars['session_id'][0]}_jid_{qpars['job_id'][0]}*")
+                    wdir = glob(f"scratch_sid_{info_obj['session_id']}_jid_{info_obj['job_id']}*")
                     fpath = os.path.join(wdir[0], nb_html_fn)
                     with open(fpath, 'wb') as fd:
                         fd.write(tres.content)
@@ -293,3 +263,36 @@ class NB2WDataDispatcher:
                                  extra_message = res.text)
 
         return res, query_out
+
+    def update_param_dict_download_file_url(self, param_dict, task, session_id, job_id, instrument_name, token, basepath):
+        for param in param_dict:
+            param_obj = self.backend_options[task]['parameters'].get(param, None)
+            # TODO improve this check, is it enough?
+            if param_obj is not None \
+                    and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
+                    and param_dict[param] != '':
+                dpars = urlencode(dict(session_id=session_id,
+                                       job_id=job_id,
+                                       file_list=param,
+                                       query_status="ready",
+                                       instrument=instrument_name,
+                                       token=token))
+                download_file_url = f"{basepath}?{dpars}"
+                param_dict[param] = download_file_url
+
+        return param_dict
+
+    def extract_info_from_callback_url(self, url):
+        spl_cb_url = urlsplit(url)
+        qpars = parse_qs(spl_cb_url[3])
+        info_obj = dict(
+            scheme=spl_cb_url[0],
+            netloc=spl_cb_url[1],
+            path=spl_cb_url[2],
+            session_id=qpars['session_id'][0],
+            job_id=qpars['job_id'][0],
+            token=qpars['token'][0],
+            instrument_name=qpars['instrument_name'][0]
+        )
+
+        return info_obj
