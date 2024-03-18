@@ -189,7 +189,13 @@ class NB2WDataDispatcher:
         else:
             basepath = f"{info_obj['scheme']}://{info_obj['netloc']}{info_obj['path'].replace('call_back', 'download_file')}"
 
-        param_dict = self.update_param_dict_download_file_url(param_dict, task, info_obj['session_id'], info_obj['job_id'], info_obj['instrument_name'], info_obj['token'], basepath)
+        param_dict = self.update_param_dict_download_file_url(param_dict,
+                                                              task,
+                                                              info_obj['session_id'],
+                                                              info_obj['job_id'],
+                                                              info_obj['instrument_name'],
+                                                              info_obj['token'],
+                                                              basepath)
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
