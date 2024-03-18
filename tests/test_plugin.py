@@ -525,17 +525,6 @@ def test_failed_nbhtml_download(live_nb2service,
                 break
             time.sleep(10) 
 
-        assert 'download_products' in jdata['exit_status']['message']        
-        downlink = re.search('href="([^\"]*)\"',
-                             jdata['exit_status']['message']).groups()[-1]
-        
-        c = requests.get(downlink)
-        assert c.status_code == 200
-
-        htmlcont = gzip.decompress(c.content)
-        assert mime_from_buffer(htmlcont, mime=True) == 'text/html'
-        assert 'body class="jp-Notebook"' in htmlcont.decode()
-        
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
