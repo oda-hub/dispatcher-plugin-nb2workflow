@@ -1,5 +1,6 @@
 from cdci_data_analysis.analysis.queries import QueryOutput
 from cdci_data_analysis.configurer import DataServerConf
+from cdci_data_analysis.analysis.parameters import subclasses_recursive
 import requests
 import time 
 from . import exposer
@@ -241,13 +242,37 @@ class NB2WDataDispatcher:
 
         return res, query_out
 
+    # def update_param_dict_download_file_url(self, param_dict, task, session_id, job_id, instrument_name, token, basepath, ontology_object=None):
+    #     parameter_hierarchy = ontology_object.get_parameter_hierarchy("http://odahub.io/ontology#POSIXPath")
+    #     for param in param_dict:
+    #         param_obj = self.backend_options[task]['parameters'].get(param, None)
+    #         # TODO improve this check, is it enough?
+    #         if param_obj is not None and param_dict[param] != '':
+    #                 # and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
+    #             for owl_superclass_uri in parameter_hierarchy:
+    #                 for python_subclass in subclasses_recursive(param_obj.__class__):
+    #                     if python_subclass.matches_owl_uri(owl_superclass_uri):
+    #                         dpars = urlencode(dict(session_id=session_id,
+    #                                                job_id=job_id,
+    #                                                file_list=param,
+    #                                                query_status="ready",
+    #                                                instrument=instrument_name,
+    #                                                token=token))
+    #                         download_file_url = f"{basepath}?{dpars}"
+    #                         param_dict[param] = download_file_url
+    #
+    #     return param_dict
+
     def update_param_dict_download_file_url(self, param_dict, task, session_id, job_id, instrument_name, token, basepath):
         for param in param_dict:
-            param_obj = self.backend_options[task]['parameters'].get(param, None)
+            # param_obj = self.backend_options[task]['parameters'].get(param, None)
+            # if param_obj is not None \
+            #         and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
+            #         and param_dict[param] != '':
             # TODO improve this check, is it enough?
-            if param_obj is not None \
-                    and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
-                    and param_dict[param] != '':
+            if (param_dict[param] != ''
+                    and isinstance(param_dict[param], dict)
+                    and param_dict[param].get('downloadable', False)):
                 dpars = urlencode(dict(session_id=session_id,
                                        job_id=job_id,
                                        file_list=param,
@@ -256,7 +281,6 @@ class NB2WDataDispatcher:
                                        token=token))
                 download_file_url = f"{basepath}?{dpars}"
                 param_dict[param] = download_file_url
-
         return param_dict
 
     def extract_info_from_callback_url(self, url):
