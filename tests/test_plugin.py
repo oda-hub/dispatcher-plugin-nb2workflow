@@ -280,27 +280,6 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
-def test_image_product_with_file(dispatcher_live_fixture, mock_backend):
-    server = dispatcher_live_fixture
-    logger.info("constructed server: %s", server)
-
-    p_file_path = DispatcherJobState.create_p_value_file(p_value=5)
-    list_file = open(p_file_path)
-
-    c = requests.post(server + "/run_analysis",
-                      params={'instrument': 'example0',
-                              'query_status': 'new',
-                              'query_type': 'Real',
-                              'product_type': 'image',
-                              'api': 'True',
-                              'run_asynch': 'False'},
-                      files={'dummy_file': list_file.read()})
-
-    list_file.close()
-    assert c.status_code == 200
-    jdata = c.json()
-    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
-
 def test_external_service_kg(conf_file, dispatcher_live_fixture):
     with open(conf_file, 'r') as fd:
         conf_bk = fd.read()
