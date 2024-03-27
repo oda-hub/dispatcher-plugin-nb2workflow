@@ -8,6 +8,7 @@ from urllib.parse import urlsplit, parse_qs, urlencode
 import os
 from glob import glob
 import logging
+import validators
 
 logger = logging.getLogger()
 
@@ -184,19 +185,7 @@ class NB2WDataDispatcher:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
 
-        info_obj = self.extract_info_from_callback_url(call_back_url)
-        if self.external_disp_url is not None:
-            basepath = os.path.join(self.external_disp_url, 'dispatch-data/download_file')
-        else:
-            basepath = f"{info_obj['scheme']}://{info_obj['netloc']}{info_obj['path'].replace('call_back', 'download_file')}"
-
-        param_dict = self.update_param_dict_download_file_url(param_dict,
-                                                              task,
-                                                              info_obj['session_id'],
-                                                              info_obj['job_id'],
-                                                              info_obj['instrument_name'],
-                                                              info_obj['token'],
-                                                              basepath)
+        param_dict = self.update_param_dict_download_file_url(param_dict)
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
@@ -242,45 +231,14 @@ class NB2WDataDispatcher:
 
         return res, query_out
 
-    # def update_param_dict_download_file_url(self, param_dict, task, session_id, job_id, instrument_name, token, basepath, ontology_object=None):
-    #     parameter_hierarchy = ontology_object.get_parameter_hierarchy("http://odahub.io/ontology#POSIXPath")
-    #     for param in param_dict:
-    #         param_obj = self.backend_options[task]['parameters'].get(param, None)
-    #         # TODO improve this check, is it enough?
-    #         if param_obj is not None and param_dict[param] != '':
-    #                 # and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
-    #             for owl_superclass_uri in parameter_hierarchy:
-    #                 for python_subclass in subclasses_recursive(param_obj.__class__):
-    #                     if python_subclass.matches_owl_uri(owl_superclass_uri):
-    #                         dpars = urlencode(dict(session_id=session_id,
-    #                                                job_id=job_id,
-    #                                                file_list=param,
-    #                                                query_status="ready",
-    #                                                instrument=instrument_name,
-    #                                                token=token))
-    #                         download_file_url = f"{basepath}?{dpars}"
-    #                         param_dict[param] = download_file_url
-    #
-    #     return param_dict
-
-    def update_param_dict_download_file_url(self, param_dict, task, session_id, job_id, instrument_name, token, basepath):
+    def update_param_dict_download_file_url(self, param_dict):
         for param in param_dict:
-            # param_obj = self.backend_options[task]['parameters'].get(param, None)
-            # if param_obj is not None \
-            #         and param_obj.get('owl_type') == "http://odahub.io/ontology#POSIXPath" \
-            #         and param_dict[param] != '':
             # TODO improve this check, is it enough?
             if (param_dict[param] != ''
-                    and isinstance(param_dict[param], dict)
-                    and param_dict[param].get('downloadable', False)):
-                dpars = urlencode(dict(session_id=session_id,
-                                       job_id=job_id,
-                                       file_list=param,
-                                       query_status="ready",
-                                       instrument=instrument_name,
-                                       token=token))
-                download_file_url = f"{basepath}?{dpars}"
-                param_dict[param] = download_file_url
+                    and validators.url(str(param_dict[param])))\
+                    and '&token=INSERT_YOUR_TOKEN_HERE' in param_dict[param]:
+                token = param_dict.get('token', None)
+                param_dict[param] = param_dict[param].replace("&token=INSERT_YOUR_TOKEN_HERE", f'&token={token}')
         return param_dict
 
     def extract_info_from_callback_url(self, url):
