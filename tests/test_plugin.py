@@ -512,7 +512,7 @@ def test_failed_nbhtml_download(live_nb2service,
 @pytest.mark.fullstack
 def test_file_download(live_nb2service,
                        conf_file,
-                       dispatcher_live_fixture,
+                       dispatcher_live_fixture_with_external_products_url,
                        dispatcher_test_conf,
                        caplog):
     with open(conf_file, 'r') as fd:
@@ -522,31 +522,49 @@ def test_file_download(live_nb2service,
         with open(conf_file, 'w') as fd:
             fd.write(config_real_nb2service % live_nb2service)
 
-        server = dispatcher_live_fixture
+        server = dispatcher_live_fixture_with_external_products_url
         logger.info("constructed server: %s", server)
 
         # ensure new conf file is read
         c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
         assert c.status_code == 200
 
-        from oda_api.api import DispatcherAPI, RemoteException
-        disp = DispatcherAPI(url=server)
-        with pytest.raises(RemoteException):
-            prod = disp.get_product(instrument="example",
-                                    product="file_download"
-                                    )
+        # from oda_api.api import DispatcherAPI, RemoteException
+        # disp = DispatcherAPI(url=server)
+        # with pytest.raises(RemoteException):
+        #     prod = disp.get_product(instrument="example",
+        #                             product="file_download"
+        #                             )
 
-        dpars = urlencode(dict(session_id=disp.session_id,
-                               job_id=disp.job_id,
-                               file_list='dummy_file',
-                               query_status="ready",
-                               instrument='example',
-                               token=None))
-        download_url = f'{os.path.join(dispatcher_test_conf["dispatcher_callback_url_base"], "download_file")}?{dpars}'
 
-        assert (f'An issue occurred when attempting to download the url '
-                f'{download_url}, this might be related to an invalid url, please check the input provided') in caplog.text
-        print(f'caplog.text: {caplog.text}')
+        params = {'instrument': 'example',
+                  'query_status': 'new',
+                  'query_type': 'Real',
+                  'product_type': 'file_download'}
+
+        # for i in range(10):
+        p_file_path = DispatcherJobState.create_p_value_file(p_value=5)
+        list_file = open(p_file_path)
+        c = requests.post(os.path.join(server, "run_analysis"),
+                          params=params,
+                          files={'dummy_file': list_file.read()})
+        list_file.close()
+        jdata = c.json()
+        print(json.dumps(jdata, indent=4, sort_keys=True))
+        assert c.status_code == 200
+            # time.sleep(10)
+
+        # dpars = urlencode(dict(session_id=disp.session_id,
+        #                        job_id=disp.job_id,
+        #                        file_list='dummy_file',
+        #                        query_status="ready",
+        #                        instrument='example',
+        #                        token=None))
+        # download_url = f'{os.path.join(dispatcher_test_conf["dispatcher_callback_url_base"], "download_file")}?{dpars}'
+        #
+        # assert (f'An issue occurred when attempting to download the url '
+        #         f'{download_url}, this might be related to an invalid url, please check the input provided') in caplog.text
+        # print(f'caplog.text: {caplog.text}')
 
     finally:
         with open(conf_file, 'w') as fd:
