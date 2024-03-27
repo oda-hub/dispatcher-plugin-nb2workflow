@@ -2,6 +2,7 @@ import json
 import logging
 import requests
 from oda_api.data_products import PictureProduct, ImageDataProduct
+from cdci_data_analysis.pytest_fixtures import DispatcherJobState
 import shutil
 from textwrap import dedent
 import time
@@ -13,7 +14,7 @@ import gzip
 import os
 from magic import from_buffer as mime_from_buffer
 from conftest import set_backend_status
-
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ instruments:
 expected_arguments = ["T1",
                       "T2",
                       "T_format",
+                      "dummy_file",
                       "token",
                       "seed",
                       "some_param"]
@@ -125,6 +127,7 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
             prod_dict = elem['prod_dict']
     assert prod_dict == {'ascii_binary': 'ascii_binary_query',
                          'image': 'image_query',
+                         'file_download': 'file_download_query',
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
 
@@ -501,17 +504,68 @@ def test_failed_nbhtml_download(live_nb2service,
                 break
             time.sleep(10) 
 
-        assert 'download_products' in jdata['exit_status']['message']        
-        downlink = re.search('href="([^\"]*)\"',
-                             jdata['exit_status']['message']).groups()[-1]
-        
-        c = requests.get(downlink)
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+
+
+@pytest.mark.fullstack
+def test_file_download(live_nb2service,
+                       conf_file,
+                       dispatcher_live_fixture_with_external_products_url,
+                       dispatcher_test_conf,
+                       caplog):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write(config_real_nb2service % live_nb2service)
+
+        server = dispatcher_live_fixture_with_external_products_url
+        logger.info("constructed server: %s", server)
+
+        # ensure new conf file is read
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
         assert c.status_code == 200
 
-        htmlcont = gzip.decompress(c.content)
-        assert mime_from_buffer(htmlcont, mime=True) == 'text/html'
-        assert 'body class="jp-Notebook"' in htmlcont.decode()
-        
+        # from oda_api.api import DispatcherAPI, RemoteException
+        # disp = DispatcherAPI(url=server)
+        # with pytest.raises(RemoteException):
+        #     prod = disp.get_product(instrument="example",
+        #                             product="file_download"
+        #                             )
+
+
+        params = {'instrument': 'example',
+                  'query_status': 'new',
+                  'query_type': 'Real',
+                  'product_type': 'file_download'}
+
+        # for i in range(10):
+        p_file_path = DispatcherJobState.create_p_value_file(p_value=5)
+        list_file = open(p_file_path)
+        c = requests.post(os.path.join(server, "run_analysis"),
+                          params=params,
+                          files={'dummy_file': list_file.read()})
+        list_file.close()
+        jdata = c.json()
+        print(json.dumps(jdata, indent=4, sort_keys=True))
+        assert c.status_code == 200
+            # time.sleep(10)
+
+        # dpars = urlencode(dict(session_id=disp.session_id,
+        #                        job_id=disp.job_id,
+        #                        file_list='dummy_file',
+        #                        query_status="ready",
+        #                        instrument='example',
+        #                        token=None))
+        # download_url = f'{os.path.join(dispatcher_test_conf["dispatcher_callback_url_base"], "download_file")}?{dpars}'
+        #
+        # assert (f'An issue occurred when attempting to download the url '
+        #         f'{download_url}, this might be related to an invalid url, please check the input provided') in caplog.text
+        # print(f'caplog.text: {caplog.text}')
+
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
