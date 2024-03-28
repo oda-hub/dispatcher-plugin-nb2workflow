@@ -244,17 +244,3 @@ class NB2WDataDispatcher:
                 param_dict[param] = param_dict[param].replace("&token=INSERT_YOUR_TOKEN_HERE", token_arg)
         return param_dict
 
-    def extract_info_from_callback_url(self, url):
-        spl_cb_url = urlsplit(url)
-        qpars = parse_qs(spl_cb_url[3])
-        info_obj = dict(
-            scheme=spl_cb_url[0],
-            netloc=spl_cb_url[1],
-            path=spl_cb_url[2],
-            session_id=qpars['session_id'][0],
-            job_id=qpars['job_id'][0],
-            token=qpars['token'][0],
-            instrument_name=qpars['instrument_name'][0]
-        )
-
-        return info_obj
