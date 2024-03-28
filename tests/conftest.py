@@ -3,6 +3,7 @@ from cdci_data_analysis.pytest_fixtures import (
             dispatcher_test_conf_fn,
             dispatcher_test_conf_with_external_products_url_fn,
             dispatcher_test_conf,
+            dispatcher_test_conf_with_external_products_url,
             dispatcher_live_fixture,
             dispatcher_live_fixture_with_external_products_url,
             gunicorn_dispatcher,
