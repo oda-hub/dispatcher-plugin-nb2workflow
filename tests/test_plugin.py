@@ -554,7 +554,7 @@ def test_file_download(live_nb2service,
                               files={'dummy_file': list_file.read()})
             list_file.close()
             jdata = c.json()
-            print(json.dumps(jdata, indent=4, sort_keys=True))
+            print('test_download_file run_analysis jdata: ', json.dumps(jdata, indent=4, sort_keys=True))
             assert c.status_code == 200
             time.sleep(5)
 
