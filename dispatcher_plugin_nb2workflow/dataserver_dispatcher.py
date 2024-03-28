@@ -234,11 +234,14 @@ class NB2WDataDispatcher:
     def update_param_dict_download_file_url(self, param_dict):
         for param in param_dict:
             # TODO improve this check, is it enough?
-            if (param_dict[param] != ''
-                    and validators.url(str(param_dict[param])))\
+            if param_dict[param] != '' \
+                    and validators.url(str(param_dict[param])) \
                     and '&token=INSERT_YOUR_TOKEN_HERE' in param_dict[param]:
                 token = param_dict.get('token', None)
-                param_dict[param] = param_dict[param].replace("&token=INSERT_YOUR_TOKEN_HERE", f'&token={token}')
+                token_arg = ''
+                if token is not None:
+                    token_arg = f'&token={token}'
+                param_dict[param] = param_dict[param].replace("&token=INSERT_YOUR_TOKEN_HERE", token_arg)
         return param_dict
 
     def extract_info_from_callback_url(self, url):
