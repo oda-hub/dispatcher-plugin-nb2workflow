@@ -33,12 +33,13 @@ def construct_parameter_lists(backend_param_dict, ontology_path):
                             "http://odahub.io/ontology#EndTime": "T2",
                             "http://odahub.io/ontology#AstrophysicalObject": "src_name",
                             "ThisNameShouldNotExist": "token",
+                            "ThisNameShouldNotExist": "_token",
                           }
     par_name_substitution = {'token': '_token'}
     # There are two name substitutions for "*token": 
     # 1) if backend notebook defines parameter named "token", it will be renamed by general mechanism (appending "_rename")
     # 2) the actual token (represented as SourceQuery parameter "token") will be sent to backend as "_token" request argument
-
+    
     plist = []
     source_plist = []
     for pname, pval in backend_param_dict.items():
