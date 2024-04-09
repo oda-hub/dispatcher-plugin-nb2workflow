@@ -124,6 +124,7 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
         if isinstance(elem, dict) and 'prod_dict' in elem.keys():
             prod_dict = elem['prod_dict']
     assert prod_dict == {'ascii_binary': 'ascii_binary_query',
+                         'dummy_echo': 'dummy_echo_query',
                          'image': 'image_query',
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
