@@ -96,15 +96,17 @@ def get_config_dict_from_kg(kg_conf_dict=static_config_dict['kg']):
     for r in kg_select('''
                 ?w a <http://odahub.io/ontology#WorkflowService>;
                 <http://odahub.io/ontology#deployment_name> ?deployment_name;
-                <http://odahub.io/ontology#service_name> ?service_name ;
-                <https://schema.org/creativeWorkStatus>?  ?work_status .
-            ''', kg_conf_dict): 
+                <http://odahub.io/ontology#service_name> ?service_name .
+                OPTIONAL {
+                    ?w <https://schema.org/creativeWorkStatus> ?work_status .
+                }
+            ''', kg_conf_dict):
 
         logger.info('found instrument service record %s', r)
         cfg_dict['instruments'][r['service_name']['value']] = {
             "data_server_url": f"http://{r['deployment_name']['value']}:8000",
             "dummy_cache": "",
-            "restricted_access": False if r['work_status']['value'] == "production" else True
+            "restricted_access": False if r.get('work_status', {'value': 'undefined'})['value'] == "production" else True
         }
     
     return cfg_dict
