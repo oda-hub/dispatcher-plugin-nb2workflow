@@ -14,7 +14,8 @@ class NB2WDataDispatcher:
     def __init__(self, instrument=None, param_dict=None, task=None, config=None):
         iname = instrument if isinstance(instrument, str) else instrument.name
         if config is None:
-            config = DataServerConf.from_conf_dict(exposer.combined_instrument_dict[iname])
+            config = DataServerConf.from_conf_dict(exposer.combined_instrument_dict[iname],
+                                                   allowed_keys=['restricted_access', 'creativeWorkStatus'])
 
         self.include_glued_output = exposer.static_config_dict.get('include_glued_output', True)
         self.data_server_url = config.data_server_url
