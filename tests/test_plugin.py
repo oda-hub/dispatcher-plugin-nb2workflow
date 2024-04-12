@@ -277,6 +277,16 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
+def test_get_config_dict_from_kg():
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    assert cdict['instruments']['kgexample']['creativeWorkStatus'] == 'development'
+    assert cdict['instruments']['kgunlab']['creativeWorkStatus'] == 'undefined'
+    assert cdict['instruments']['kgprod']['creativeWorkStatus'] == 'production'
+
 def test_external_service_kg(conf_file, dispatcher_live_fixture):
     with open(conf_file, 'r') as fd:
         conf_bk = fd.read()

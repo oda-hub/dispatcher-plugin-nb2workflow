@@ -106,6 +106,8 @@ def get_config_dict_from_kg(kg_conf_dict=static_config_dict['kg']):
         cfg_dict['instruments'][r['service_name']['value']] = {
             "data_server_url": f"http://{r['deployment_name']['value']}:8000",
             "dummy_cache": "",
+            "creativeWorkStatus": r.get('work_status', {'value': 'undefined'})['value'], 
+                # creativeWorkStatus isn't currently used further in plugin but may be used in the future. Useful in test, though.
             "restricted_access": False if r.get('work_status', {'value': 'undefined'})['value'] == "production" else True
         }
     
