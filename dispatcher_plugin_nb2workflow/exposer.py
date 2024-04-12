@@ -170,8 +170,8 @@ class NB2WInstrumentFactoryIter:
                 # only nb2w instruments may be affected. We don't want to instantiate any instrument here
                 instr_query = getattr(self.lst[idx], 'instrument_query', None)
                 if ( instr_query is not None and
-                     instr_query.restricted_access != combined_instrument_dict[instr]['restricted_access'] ):
-                    self.lst[idx] = factory_factory(instr, combined_instrument_dict[instr]['restricted_access'])
+                     instr_query.restricted_access != combined_instrument_dict[instr].get('restricted_access', False) ):
+                    self.lst[idx] = factory_factory(instr, combined_instrument_dict[instr].get('restricted_access', False))
 
     def __iter__(self):
         self._update_instruments_list()
