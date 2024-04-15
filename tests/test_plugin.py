@@ -660,8 +660,8 @@ def test_fail_return_progress(dispatcher_live_fixture, mock_backend):
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
-    assert jdata['job_status'] == 'failed'
-    assert jdata['exit_status']['message'] == 'connection status code: 500'
+    assert jdata['return_progress_job_status'] == 'failed'
+    assert jdata['return_progress_exit_status']['message'] == 'connection status code: 500'
 
 
 def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
@@ -684,7 +684,7 @@ def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
-    assert jdata['job_status'] == 'done'
+    assert jdata['return_progress_job_status'] == 'done'
     assert 'progress_product_html_output' not in jdata['return_progress_products']
 
 
