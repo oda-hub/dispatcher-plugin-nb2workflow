@@ -685,7 +685,7 @@ def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert jdata['job_status'] == 'done'
-    assert 'progress_product_html_output' not in jdata['products']
+    assert 'progress_product_html_output' not in jdata['return_progress_products']
 
 
 def test_default_value_preservation(dispatcher_live_fixture, mock_backend):
