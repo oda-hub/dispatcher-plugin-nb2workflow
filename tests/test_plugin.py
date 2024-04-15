@@ -598,10 +598,10 @@ def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
         test_output_html = fd.read()
     if api:
         assert 'progress_product_list' in jdata['return_progress_products']
-        assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
+        assert jdata['return_progress_products']['progress_product_list'][0]['value'] == test_output_html
     else:
         assert 'progress_product_html_output' in jdata['return_progress_products']
-        assert jdata['products']['progress_product_html_output'][0] == test_output_html
+        assert jdata['return_progress_products']['progress_product_html_output'][0] == test_output_html
 
 
 @pytest.mark.fullstack
