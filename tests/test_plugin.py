@@ -538,11 +538,11 @@ def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
-    assert 'progress_product_list' in jdata['products']
+    assert 'progress_product_list' in jdata['return_progress_products']
     with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output.html'), 'r') as fd:
         test_output_html = fd.read()
 
-    assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
+    assert jdata['return_progress_products']['progress_product_list'][0]['value'] == test_output_html
 
 
 def test_return_progress_no_glued_output(set_env_var_plugin_config_no_glued_output_file_path, dispatcher_live_fixture, mock_backend):
@@ -564,11 +564,11 @@ def test_return_progress_no_glued_output(set_env_var_plugin_config_no_glued_outp
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
-    assert 'progress_product_list' in jdata['products']
+    assert 'progress_product_list' in jdata['return_progress_products']
     with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output_no_glue_output.html'), 'r') as fd:
         test_output_html = fd.read()
 
-    assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
+    assert jdata['return_progress_products']['progress_product_list'][0]['value'] == test_output_html
 
 
 @pytest.mark.parametrize("api", [True, False])
@@ -597,10 +597,10 @@ def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
     with open(os.path.join(os.path.dirname(__file__), 'responses', 'test_output.html'), 'r') as fd:
         test_output_html = fd.read()
     if api:
-        assert 'progress_product_list' in jdata['products']
+        assert 'progress_product_list' in jdata['return_progress_products']
         assert jdata['products']['progress_product_list'][0]['value'] == test_output_html
     else:
-        assert 'progress_product_html_output' in jdata['products']
+        assert 'progress_product_html_output' in jdata['return_progress_products']
         assert jdata['products']['progress_product_html_output'][0] == test_output_html
 
 
