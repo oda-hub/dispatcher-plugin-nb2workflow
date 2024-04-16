@@ -24,6 +24,20 @@
             }
         }
     },
+    "dummy_echo": {
+        "output": {
+            "result": {
+                "comment": "",
+                "name": "result",
+                "owl_type": "http://odahub.io/ontology#String",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": "foo"
+            }
+        },
+        "parameters": {}
+    },
     "image": {
         "output": {
             "result": {

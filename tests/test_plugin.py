@@ -127,6 +127,7 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
         if isinstance(elem, dict) and 'prod_dict' in elem.keys():
             prod_dict = elem['prod_dict']
     assert prod_dict == {'ascii_binary': 'ascii_binary_query',
+                         'dummy_echo': 'dummy_echo_query',
                          'image': 'image_query',
                          'file_download': 'file_download_query',
                          'lightcurve': 'lightcurve_query',
@@ -958,3 +959,32 @@ def test_kg_based_instrument_parameters(conf_file, dispatcher_live_fixture, capl
             fd.write(conf_bk)        
         os.remove(tmpkg)
 
+@pytest.mark.parametrize('privileged', [True, False])
+def test_underscored_token(dispatcher_live_fixture, mock_backend, privileged):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'dummy_echo',
+              'run_asynch': False,
+              'api': True}
+    if privileged:
+        params['token'] = encoded_token
+    
+    c = requests.get(server + "/run_analysis",
+                    params = params)
+    
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    product = jdata['products']['text_product_list'][0]['value'] 
+    assert 'token' not in product
+    if privileged:
+        assert '_token' in product
+        assert product['_token'][0] == encoded_token
+    else:
+        assert '_token' not in product

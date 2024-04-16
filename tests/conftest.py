@@ -97,6 +97,12 @@ def trace_get_func_handler(request: Request):
 
     return Response(test_output_content, status=200)
 
+def return_request_query_dict(request: Request):
+    parsed_request_query = parse_qs(urlparse(request.url).query)
+    resp = '{"exceptions": [], "output": {"result": '+json.dumps(parsed_request_query)+'}}'
+    return Response(resp,
+                    status=200, content_type='application/json')
+    
 
 @pytest.fixture
 def mock_backend(httpserver):
@@ -120,6 +126,7 @@ def mock_backend(httpserver):
     httpserver.expect_request(f'/api/v1.0/get/image').respond_with_json(image_json)
     # httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_data(test_output_html)
     httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_handler(trace_get_func_handler)
+    httpserver.expect_request(f'/api/v1.0/get/dummy_echo').respond_with_handler(return_request_query_dict)
 
 @pytest.fixture(scope='session')
 def conf_file(tmp_path_factory):
