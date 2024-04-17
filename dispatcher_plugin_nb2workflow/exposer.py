@@ -96,15 +96,19 @@ def get_config_dict_from_kg(kg_conf_dict=static_config_dict['kg']):
     for r in kg_select('''
                 ?w a <http://odahub.io/ontology#WorkflowService>;
                 <http://odahub.io/ontology#deployment_name> ?deployment_name;
-                <http://odahub.io/ontology#service_name> ?service_name ;
-                <https://schema.org/creativeWorkStatus>?  ?work_status .
-            ''', kg_conf_dict): 
+                <http://odahub.io/ontology#service_name> ?service_name .
+                OPTIONAL {
+                    ?w <https://schema.org/creativeWorkStatus> ?work_status .
+                }
+            ''', kg_conf_dict):
 
         logger.info('found instrument service record %s', r)
         cfg_dict['instruments'][r['service_name']['value']] = {
             "data_server_url": f"http://{r['deployment_name']['value']}:8000",
             "dummy_cache": "",
-            "restricted_access": False if r['work_status']['value'] == "production" else True
+            "creativeWorkStatus": r.get('work_status', {'value': 'undefined'})['value'], 
+                # creativeWorkStatus isn't currently used further in plugin but may be used in the future. Useful in test, though.
+            "restricted_access": False if r.get('work_status', {'value': 'undefined'})['value'] == "production" else True
         }
     
     return cfg_dict
@@ -148,6 +152,7 @@ class NB2WInstrumentFactoryIter:
         available_instrs = combined_instrument_dict.keys()
         new_instrs = set(available_instrs) - set(current_instrs)
         old_instrs = set(current_instrs) - set(available_instrs)
+        keep_instrs = set(available_instrs) & set(current_instrs)
         
         if old_instrs:
             for instr in old_instrs:
@@ -158,6 +163,16 @@ class NB2WInstrumentFactoryIter:
             for instr in new_instrs:
                 self.lst.append(factory_factory(instr, combined_instrument_dict[instr].get('restricted_access', False)))
         
+        # check if some instruments changed status
+        if keep_instrs:
+            for instr in keep_instrs:
+                idx = current_instrs.index(instr)
+                # only nb2w instruments may be affected. We don't want to instantiate any instrument here
+                instr_query = getattr(self.lst[idx], 'instrument_query', None)
+                if ( instr_query is not None and
+                     instr_query.restricted_access != combined_instrument_dict[instr].get('restricted_access', False) ):
+                    self.lst[idx] = factory_factory(instr, combined_instrument_dict[instr].get('restricted_access', False))
+
     def __iter__(self):
         self._update_instruments_list()
         return self.lst.__iter__()    
