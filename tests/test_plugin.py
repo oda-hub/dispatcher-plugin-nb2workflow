@@ -467,9 +467,9 @@ def test_parameter_output(live_nb2service,
         names = [x['prod_name'] for x in prod.as_list()]
         restup = [(getattr(prod, x).name, getattr(prod, x).value, getattr(prod, x).meta_data['uri']) for x in names]
         
-        assert restup == [('flout', 4.2, 'http://odahub.io/ontology#Float'),
+        assert restup == [('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
+                          ('flout', 4.2, 'http://odahub.io/ontology#Float'),
                           ('intout', 4, 'http://odahub.io/ontology#Integer'),
-                          ('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
                           ('timeinst', 56457.0, 'http://odahub.io/ontology#TimeInstantMJD'),
                           ('timeisot',
                           '2022-10-09T13:00:00',
