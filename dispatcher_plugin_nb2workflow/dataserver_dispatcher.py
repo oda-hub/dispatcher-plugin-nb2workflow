@@ -185,7 +185,7 @@ class NB2WDataDispatcher:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
 
-        param_dict = self.update_param_dict_download_file_url(param_dict)
+        # param_dict = self.update_param_dict_download_file_url(param_dict)
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
