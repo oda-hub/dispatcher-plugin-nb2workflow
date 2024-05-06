@@ -158,7 +158,8 @@ class NB2WDataDispatcher:
                         query_out.set_failed('Error in the backend when requesting trace '
                                              f'for the task {task.strip("/")} during get_progress_run',
                                              message='connection status code: ' + str(res_trace.status_code),
-                                             e_message=e_message)
+                                             e_message=e_message,
+                                             job_status='failed')
                         logger.error('Error in the backend when requesting trace for the task '
                                      f'{task.strip("/")} during get_progress_run, ',
                                      f'connection status code: {str(res_trace.status_code)}. '
@@ -171,7 +172,8 @@ class NB2WDataDispatcher:
             query_out.set_failed(f'Error in the backend when executing task {task.strip("/")} '
                                  'during get_progress_run',
                                  message='connection status code: ' + str(res.status_code),
-                                 e_message=e_message)
+                                 e_message=e_message,
+                                 job_status='failed')
             logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
                          f'error: \n{e_message}')
 
