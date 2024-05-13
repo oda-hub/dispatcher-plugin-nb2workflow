@@ -212,37 +212,6 @@ class NB2WDataDispatcher:
                     except_message = resroot['exceptions'][0]['ename']+': '+res.json()['data']['exceptions'][0]['evalue']
                 else:
                     except_message = res.json()['exceptions'][0]
-
-                jobdir = resroot.get('jobdir', '').split('/')[-1]
-                
-                if jobdir:                    
-                    tres = requests.get('/'.join([self.data_server_url.strip('/'), 'trace', jobdir, task.strip('/')]))
-                    nb_html_fn = f'{task.strip("/")}_output.html'
-                
-                    # it's hacky but it works
-                    spl_cb_url = urlsplit(call_back_url)
-                    qpars = parse_qs(spl_cb_url[3])
-                    dpars = urlencode(dict(session_id=qpars['session_id'],
-                                        job_id=qpars['job_id'],
-                                        download_file_name=f"{nb_html_fn}.gz",
-                                        file_list=nb_html_fn,
-                                        query_status="failed",
-                                        instrument=qpars['instrument_name'],
-                                        token=qpars['token']), doseq=True)
-                    
-                    if self.external_disp_url is not None:
-                        basepath = '/'.join([self.external_disp_url.rstrip('/'), 'dispatch-data/download_products'])
-                    else:
-                        basepath = f"{spl_cb_url[0]}://{spl_cb_url[1]}{spl_cb_url[2].replace('call_back', 'download_products')}"
-                    
-                    download_url = f"{basepath}?{dpars}"
-                    
-                    wdir = glob(f"scratch_sid_{qpars['session_id'][0]}_jid_{qpars['job_id'][0]}*")
-                    fpath = os.path.join(wdir[0], nb_html_fn)
-                    with open(fpath, 'wb') as fd:
-                        fd.write(tres.content)
-                    
-                    except_message += f'\n<br><a target=_blanc href="{download_url}">Inspect notebook</a>'
                                                             
                 query_out.set_failed('Backend exception', 
                                     message='Backend failed. ' + except_message,

@@ -480,53 +480,6 @@ def test_parameter_output(live_nb2service,
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
 
-@pytest.mark.fullstack
-def test_failed_nbhtml_download(live_nb2service, 
-                                conf_file, 
-                                dispatcher_live_fixture):
-    with open(conf_file, 'r') as fd:
-        conf_bk = fd.read()
-      
-    try:
-        with open(conf_file, 'w') as fd:
-            fd.write( config_real_nb2service % live_nb2service )
-        
-        server = dispatcher_live_fixture
-        logger.info("constructed server: %s", server)    
-
-        #ensure new conf file readed 
-        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
-        assert c.status_code == 200 
-        
-        for i in range(10):
-            c = requests.get(server + "/run_analysis",
-                             params = {'instrument': 'example',
-                                       'query_status': 'new',
-                                       'query_type': 'Real',
-                                       'product_type': 'failing',
-                                      })
-            assert c.status_code == 200
-            jdata = c.json()        
-            if jdata['job_status'] == 'failed':
-                break
-            time.sleep(10) 
-
-        assert 'download_products' in jdata['exit_status']['message']        
-        downlink = re.search('href="([^\"]*)\"',
-                             jdata['exit_status']['message']).groups()[-1]
-        
-        c = requests.get(downlink)
-        assert c.status_code == 200
-
-        htmlcont = gzip.decompress(c.content)
-        assert mime_from_buffer(htmlcont, mime=True) == 'text/html'
-        assert 'body class="jp-Notebook"' in htmlcont.decode()
-        
-    finally:
-        with open(conf_file, 'w') as fd:
-            fd.write(conf_bk)
-
-
 @pytest.mark.parametrize("run_asynch", [True, False])
 def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     server = dispatcher_live_fixture
