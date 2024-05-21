@@ -570,19 +570,15 @@ def test_file_download(live_nb2service,
 
         file_hash = make_hash_file(p_file_path)
 
-        params_url = dict(file_list=f'dummy_file_{file_hash}',
+        params_url = dict(file_list=f'{file_hash}',
                           return_archive=False)
-        if not public:
-            params_url['token'] = encoded_token
 
         dpars = urlencode(params_url)
         download_url_host = os.path.join(dispatcher_test_conf_with_external_products_url["products_url"], "dispatch-data/download_file")
         download_url_host_no_scheme = urlparse(download_url_host).path
         assert f'Max retries exceeded with url: {download_url_host_no_scheme}?{dpars}' in jdata['exit_status']['message']
         dummy_file_url = f'{download_url_host}?{dpars}'
-        if not public:
-            dummy_file_url = dummy_file_url.replace(f"&token={encoded_token}", '')
-        assert f'{dummy_file_url}&token=INSERT_YOUR_TOKEN_HERE' == jdata['products']['analysis_parameters']['dummy_file']
+        assert dummy_file_url == jdata['products']['analysis_parameters']['dummy_file']
 
     finally:
         with open(conf_file, 'w') as fd:
