@@ -282,6 +282,16 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
+def test_get_config_dict_from_kg():
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    assert cdict['instruments']['kgexample']['creativeWorkStatus'] == 'development'
+    assert cdict['instruments']['kgunlab']['creativeWorkStatus'] == 'undefined'
+    assert cdict['instruments']['kgprod']['creativeWorkStatus'] == 'production'
+
 def test_external_service_kg(conf_file, dispatcher_live_fixture):
     with open(conf_file, 'r') as fd:
         conf_bk = fd.read()
@@ -312,8 +322,7 @@ def test_external_service_kg(conf_file, dispatcher_live_fixture):
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
-            
-            
+
 @pytest.mark.parametrize("privileged", [True, False])
 def test_local_kg(conf_file, dispatcher_live_fixture, privileged):  
     with open(conf_file, 'r') as fd:
@@ -462,9 +471,9 @@ def test_parameter_output(live_nb2service,
         names = [x['prod_name'] for x in prod.as_list()]
         restup = [(getattr(prod, x).name, getattr(prod, x).value, getattr(prod, x).meta_data['uri']) for x in names]
         
-        assert restup == [('flout', 4.2, 'http://odahub.io/ontology#Float'),
+        assert restup == [('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
+                          ('flout', 4.2, 'http://odahub.io/ontology#Float'),
                           ('intout', 4, 'http://odahub.io/ontology#Integer'),
-                          ('mrk', 'Mrk 421', 'http://odahub.io/ontology#AstrophysicalObject'),
                           ('timeinst', 56457.0, 'http://odahub.io/ontology#TimeInstantMJD'),
                           ('timeisot',
                           '2022-10-09T13:00:00',
@@ -579,7 +588,7 @@ def test_file_download(live_nb2service,
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
 
-
+            
 @pytest.mark.parametrize("run_asynch", [True, False])
 def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     server = dispatcher_live_fixture
@@ -747,7 +756,7 @@ def test_trace_fail_return_progress(dispatcher_live_fixture, mock_backend):
     jdata = c.json()
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
-    assert jdata['job_status'] == 'done'
+    assert jdata['job_status'] == 'failed'
     assert 'progress_product_html_output' not in jdata['products']
 
 
@@ -908,6 +917,69 @@ def test_added_in_kg(conf_file, dispatcher_live_fixture):
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)        
         os.remove(tmpkg)
+
+def test_workstatus_update_in_kg(conf_file, dispatcher_live_fixture):  
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        tmpkg = '/tmp/example-kg.ttl'
+        
+        with open('tests/example-kg.ttl') as fd:
+            orig_kg = fd.read()
+            
+        shutil.copy('tests/example-kg.ttl', tmpkg)
+            
+        with open(conf_file, 'w') as fd:
+            fd.write(config_local_kg.replace('tests', '/tmp'))
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)
+
+        # reload to read config
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        def assert_instruments(available, not_available):
+            params = {'instrument': 'mock'}    
+            c = requests.get(server + "/instr-list",
+                            params = params)
+            logger.info("content: %s", c.text)
+            jdata = c.json()
+            logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+            logger.info(jdata)
+            assert c.status_code == 200
+            for av in available:
+                assert av in jdata
+            for nav in not_available:
+                assert nav not in jdata
+
+        assert_instruments(['kgprod'], ['kgunlab', 'kgexample'])
+        
+        with open(tmpkg, 'w') as fd:
+            fd.write(orig_kg.replace('development', 'production'))
+        
+        assert_instruments(['kgprod', 'kgexample'], ['kgunlab'])
+        
+        with open(tmpkg, 'w') as fd:
+            fd.write(orig_kg.replace('development', 'production')
+                            .replace('oda:service_name "kgunlab" .', 
+                                     '''sdo:creativeWorkStatus "production";
+                                        oda:service_name "kgunlab" . 
+                                     '''))
+        assert_instruments(['kgprod', 'kgexample', 'kgunlab'], [])
+        
+        with open(tmpkg, 'w') as fd:
+            fd.write(orig_kg)
+        
+        assert_instruments(['kgprod'],  ['kgunlab', 'kgexample'])
+        
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)        
+        os.remove(tmpkg)
+
+
 
 def test_kg_based_instrument_parameters(conf_file, dispatcher_live_fixture, caplog, mock_backend):
     with open(conf_file, 'r') as fd:
