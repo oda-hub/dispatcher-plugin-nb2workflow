@@ -203,8 +203,6 @@ class NB2WDataDispatcher:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
 
-        # param_dict = self.update_param_dict_download_file_url(param_dict)
-
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
         res = requests.get(url, params = param_dict)
         if res.status_code == 200:
@@ -248,17 +246,3 @@ class NB2WDataDispatcher:
                                  extra_message = res.text)
 
         return res, query_out
-
-    def update_param_dict_download_file_url(self, param_dict):
-        for param in param_dict:
-            # TODO improve this check, is it enough?
-            if param_dict[param] != '' \
-                    and validators.url(str(param_dict[param])) \
-                    and '&token=INSERT_YOUR_TOKEN_HERE' in param_dict[param]:
-                token = param_dict.get('token', None)
-                token_arg = ''
-                if token is not None:
-                    token_arg = f'&token={token}'
-                param_dict[param] = param_dict[param].replace("&token=INSERT_YOUR_TOKEN_HERE", token_arg)
-        return param_dict
-
