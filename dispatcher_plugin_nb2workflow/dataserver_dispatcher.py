@@ -1,14 +1,11 @@
 from cdci_data_analysis.analysis.queries import QueryOutput
 from cdci_data_analysis.configurer import DataServerConf
-from cdci_data_analysis.analysis.parameters import subclasses_recursive
 import requests
 import time 
 from . import exposer
 from urllib.parse import urlsplit, parse_qs, urlencode
 import os
-from glob import glob
 import logging
-import validators
 
 logger = logging.getLogger()
 
