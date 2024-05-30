@@ -577,7 +577,7 @@ def test_file_download_with_default_route_products_url_fn(live_nb2service,
 
         dpars = urlencode(download_products_params_url)
         download_url_host = os.path.join(dispatcher_test_conf_with_default_route_products_url["products_url"], "dispatch-data/download_file")
-        assert f'An issue occurred when attempting to getting the file size at the url {download_url_host}?{dpars}' in jdata['exit_status']['message']
+        assert f'An issue, due to connection error, occurred when attempting to getting the file size at the url {download_url_host}?{dpars}' in jdata['exit_status']['message']
         download_file_params_url = dict(file_list=f'{file_hash}',
                                         _is_mmoda_url=True,
                                         return_archive=False,
@@ -648,7 +648,7 @@ def test_file_download(live_nb2service,
 
         dpars = urlencode(download_products_params_url)
         download_url_host = os.path.join(dispatcher_test_conf_with_external_products_url["products_url"], "dispatch-data/download_file")
-        assert f'An issue occurred when attempting to getting the file size at the url {download_url_host}?{dpars}' in jdata['exit_status']['message']
+        assert f'An issue, due to connection error, occurred when attempting to getting the file size at the url {download_url_host}?{dpars}' in jdata['exit_status']['message']
         download_file_params_url = dict(file_list=f'{file_hash}',
                                         _is_mmoda_url=True,
                                         return_archive=False,
