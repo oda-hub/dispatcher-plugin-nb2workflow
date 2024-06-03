@@ -118,7 +118,7 @@ class NB2WProductQuery(ProductQuery):
         for param_name in instrument.get_parameters_name_list(prod_name = self.backend_product_name):
             param_instance = instrument.get_par_by_name(param_name, prod_name = self.backend_product_name)
             bk_pname = self.par_name_substitution.get(param_name, param_name)
-            if bk_pname in self.backend_param_dict:     
+            if bk_pname.startswith('_') or bk_pname in self.backend_param_dict:
                 # should not send a source parameter if it's not in notebook
                 param_dict[bk_pname] = param_instance.get_default_value()
 
