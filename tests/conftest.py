@@ -1,7 +1,16 @@
 from cdci_data_analysis.pytest_fixtures import (
             dispatcher_debug,
             dispatcher_test_conf_fn,
-            dispatcher_live_fixture
+            dispatcher_test_conf_with_external_products_url_fn,
+            dispatcher_test_conf_with_default_route_products_url_fn,
+            dispatcher_test_conf,
+            dispatcher_test_conf_with_external_products_url,
+            dispatcher_test_conf_with_default_route_products_url,
+            dispatcher_live_fixture,
+            dispatcher_live_fixture_with_external_products_url,
+            dispatcher_live_fixture_with_default_route_products_url,
+            gunicorn_dispatcher,
+            gunicorn_dispatcher_live_fixture,
         )
 import pytest
 import json
@@ -168,7 +177,9 @@ def live_nb2service(xprocess):
         timeout = 30
         max_read_lines = 10000 
         terminate_on_interrupt = True
-        args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
+        responses_path = os.path.join(os.path.dirname(__file__), 'example_nb')
+        args = ['nb2service', '--port', '9393', responses_path]
+        # args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
         def startup_check(self):
             try: 
                 res = requests.get('http://localhost:9393/')
@@ -179,6 +190,7 @@ def live_nb2service(xprocess):
             return res.json()['message'] == 'all is ok!'
     try:
         logfile = xprocess.ensure("nb2service", Starter)
+
     except Exception as e:
         xprocess.getinfo("nb2service").terminate()
         raise e

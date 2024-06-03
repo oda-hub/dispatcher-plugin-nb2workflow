@@ -2,6 +2,8 @@ import json
 import logging
 import requests
 from oda_api.data_products import PictureProduct, ImageDataProduct
+from cdci_data_analysis.pytest_fixtures import DispatcherJobState
+from cdci_data_analysis.analysis.hash import make_hash_file
 import shutil
 from textwrap import dedent
 import time
@@ -13,7 +15,7 @@ import gzip
 import os
 from magic import from_buffer as mime_from_buffer
 from conftest import set_backend_status
-
+from urllib.parse import urlencode, urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,7 @@ instruments:
 expected_arguments = ["T1",
                       "T2",
                       "T_format",
+                      "dummy_file",
                       "token",
                       "seed",
                       "some_param"]
@@ -126,6 +129,7 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
     assert prod_dict == {'ascii_binary': 'ascii_binary_query',
                          'dummy_echo': 'dummy_echo_query',
                          'image': 'image_query',
+                         'file_download': 'file_download_query',
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
 
@@ -480,6 +484,184 @@ def test_parameter_output(live_nb2service,
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
 
+@pytest.mark.fullstack
+def test_failed_nbhtml_download(live_nb2service, 
+                                conf_file, 
+                                dispatcher_live_fixture):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        for i in range(10):
+            c = requests.get(server + "/run_analysis",
+                             params = {'instrument': 'example',
+                                       'query_status': 'new',
+                                       'query_type': 'Real',
+                                       'product_type': 'failing',
+                                      })
+            assert c.status_code == 200
+            jdata = c.json()        
+            if jdata['job_status'] == 'failed':
+                break
+            time.sleep(10) 
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+
+
+@pytest.mark.fullstack
+@pytest.mark.parametrize("public", [True, False])
+def test_file_download_with_default_route_products_url_fn(live_nb2service,
+                                                          conf_file,
+                                                          dispatcher_live_fixture_with_default_route_products_url,
+                                                          dispatcher_test_conf_with_default_route_products_url,
+                                                          public):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write(config_real_nb2service % live_nb2service)
+
+        server = dispatcher_live_fixture_with_default_route_products_url
+        logger.info("constructed server: %s", server)
+
+        # ensure new conf file is read
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200
+
+        params = {'instrument': 'example',
+                  'query_status': 'new',
+                  'query_type': 'Real',
+                  'product_type': 'file_download'}
+
+        if not public:
+            token_payload_update = {
+                **token_payload,
+                "mstout": False,
+                "mssub": False,
+                "msdone": False,
+            }
+            encoded_token = jwt.encode(token_payload_update, secret_key, algorithm='HS256')
+            params['token'] = encoded_token
+
+        p_file_path = DispatcherJobState.create_p_value_file(p_value=5)
+        for i in range(5):
+            list_file = open(p_file_path)
+            c = requests.post(os.path.join(server, "run_analysis"),
+                              params=params,
+                              files={'dummy_file': list_file.read()})
+            list_file.close()
+            jdata = c.json()
+            print('test_download_file run_analysis jdata: ', json.dumps(jdata, indent=4, sort_keys=True))
+            assert c.status_code == 200
+            time.sleep(5)
+
+        file_hash = make_hash_file(p_file_path)
+
+        download_products_params_url = dict(file_list=f'{file_hash}',
+                                            _is_mmoda_url=True,
+                                            return_archive=False,
+                                            )
+
+        dpars = urlencode(download_products_params_url)
+        download_url_host = os.path.join(dispatcher_test_conf_with_default_route_products_url["products_url"], "dispatch-data/download_file")
+        assert f'An issue, due to connection error, occurred when attempting to getting the file size at the url {download_url_host}?{dpars}' in jdata['exit_status']['message']
+        download_file_params_url = dict(file_list=f'{file_hash}',
+                                        _is_mmoda_url=True,
+                                        return_archive=False,
+                                        )
+        dpars = urlencode(download_file_params_url)
+        dummy_file_url = f'{download_url_host}?{dpars}'
+        assert dummy_file_url == jdata['products']['analysis_parameters']['dummy_file']
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+
+
+@pytest.mark.fullstack
+@pytest.mark.parametrize("public", [True, False])
+def test_file_download(live_nb2service,
+                       conf_file,
+                       dispatcher_live_fixture_with_external_products_url,
+                       dispatcher_test_conf_with_external_products_url,
+                       public):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write(config_real_nb2service % live_nb2service)
+
+        server = dispatcher_live_fixture_with_external_products_url
+        logger.info("constructed server: %s", server)
+
+        # ensure new conf file is read
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200
+
+        params = {'instrument': 'example',
+                  'query_status': 'new',
+                  'query_type': 'Real',
+                  'product_type': 'file_download'}
+
+        if not public:
+            token_payload_update = {
+                **token_payload,
+                "mstout": False,
+                "mssub": False,
+                "msdone": False,
+            }
+            encoded_token = jwt.encode(token_payload_update, secret_key, algorithm='HS256')
+            params['token'] = encoded_token
+
+        p_file_path = DispatcherJobState.create_p_value_file(p_value=5)
+        for i in range(5):
+            list_file = open(p_file_path)
+            c = requests.post(os.path.join(server, "run_analysis"),
+                              params=params,
+                              files={'dummy_file': list_file.read()})
+            list_file.close()
+            jdata = c.json()
+            print('test_download_file run_analysis jdata: ', json.dumps(jdata, indent=4, sort_keys=True))
+            assert c.status_code == 200
+            time.sleep(5)
+
+        file_hash = make_hash_file(p_file_path)
+
+        download_products_params_url = dict(file_list=f'{file_hash}',
+                                            _is_mmoda_url=True,
+                                            return_archive=False,
+                                            )
+
+        dpars = urlencode(download_products_params_url)
+        download_url_host = os.path.join(dispatcher_test_conf_with_external_products_url["products_url"], "dispatch-data/download_file")
+        assert f'An issue, due to connection error, occurred when attempting to getting the file size at the url {download_url_host}?{dpars}' in jdata['exit_status']['message']
+        download_file_params_url = dict(file_list=f'{file_hash}',
+                                        _is_mmoda_url=True,
+                                        return_archive=False,
+                                        )
+        dpars = urlencode(download_file_params_url)
+        dummy_file_url = f'{download_url_host}?{dpars}'
+        assert dummy_file_url == jdata['products']['analysis_parameters']['dummy_file']
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+
+            
 @pytest.mark.parametrize("run_asynch", [True, False])
 def test_return_progress(dispatcher_live_fixture, mock_backend, run_asynch):
     server = dispatcher_live_fixture

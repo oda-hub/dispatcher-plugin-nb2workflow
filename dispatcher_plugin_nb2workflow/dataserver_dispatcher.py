@@ -5,7 +5,6 @@ import time
 from . import exposer
 from urllib.parse import urlsplit, parse_qs, urlencode
 import os
-from glob import glob
 import logging
 
 logger = logging.getLogger()
@@ -53,7 +52,7 @@ class NB2WDataDispatcher:
                     time.sleep(sleep_seconds)
             if not backend_available:
                 return {}
-            
+
             self._backend_options = options_dict
         return options_dict
         
@@ -195,8 +194,8 @@ class NB2WDataDispatcher:
             task=self.task     
 
         if param_dict is None:
-            param_dict=self.param_dict   
-        
+            param_dict=self.param_dict
+
         if run_asynch:
             param_dict['_async_request_callback'] = call_back_url
             param_dict['_async_request'] = "yes"
@@ -217,7 +216,7 @@ class NB2WDataDispatcher:
                                     message='Backend failed. ' + except_message,
                                     job_status='failed')
                 return res, query_out
-                    
+
             comment_name = self.get_backend_comment(task.strip('/'))
             comment_value = ''
             if comment_name:
