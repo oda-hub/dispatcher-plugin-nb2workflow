@@ -93,6 +93,7 @@ class NB2WProductQuery(ProductQuery):
     def __init__(self, name, backend_product_name, backend_param_dict, backend_output_dict, ontology_path):
         self.backend_product_name = backend_product_name
         self.backend_output_dict = backend_output_dict
+        self.backend_param_dict = backend_param_dict
         parameter_lists = construct_parameter_lists(backend_param_dict, ontology_path)
         self.par_name_substitution = parameter_lists['par_name_substitution']
         plist = deepcopy(parameter_lists['prod_plist'])
@@ -117,7 +118,9 @@ class NB2WProductQuery(ProductQuery):
         for param_name in instrument.get_parameters_name_list(prod_name = self.backend_product_name):
             param_instance = instrument.get_par_by_name(param_name, prod_name = self.backend_product_name)
             bk_pname = self.par_name_substitution.get(param_name, param_name)
-            param_dict[bk_pname] = param_instance.get_default_value()
+            if bk_pname.startswith('_') or bk_pname in self.backend_param_dict:
+                # should not send a source parameter if it's not in notebook
+                param_dict[bk_pname] = param_instance.get_default_value()
 
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
