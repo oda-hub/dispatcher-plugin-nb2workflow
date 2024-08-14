@@ -134,9 +134,9 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
                          'table': 'table_query'}
 
 
-def test_instrument_backend_unavailable(dispatcher_live_fixture, mock_backend):
+def test_instrument_backend_unavailable(dispatcher_live_fixture, httpserver):
     # current behaviour is to have instrument with no products, could be changed in the future
-    mock_backend.stop()
+    httpserver.stop()
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
        
