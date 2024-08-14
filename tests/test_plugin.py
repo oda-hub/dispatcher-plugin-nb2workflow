@@ -134,7 +134,7 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
                          'table': 'table_query'}
 
 def test_mock_server_lifetime():
-    resp = requests.get('http://127.0.0.1:9000')
+    resp = requests.get('http://127.0.0.1:8000')
     assert resp.status_code == 200
 
 def test_instrument_backend_unavailable(dispatcher_live_fixture):
