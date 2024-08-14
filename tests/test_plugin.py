@@ -82,10 +82,6 @@ def test_instrument_available(dispatcher_live_fixture, mock_backend):
     assert c.status_code == 200
     assert 'example0' in jdata
 
-def test_mock_server_lifetime():
-    resp = requests.get('http://127.0.0.1:9000')
-    assert resp.status_code == 200
-
 def test_instrument_parameters(dispatcher_live_fixture, caplog, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
@@ -137,6 +133,9 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
 
+def test_mock_server_lifetime():
+    resp = requests.get('http://127.0.0.1:9000')
+    assert resp.status_code == 200
 
 def test_instrument_backend_unavailable(dispatcher_live_fixture):
     # current behaviour is to have instrument with no products, could be changed in the future
