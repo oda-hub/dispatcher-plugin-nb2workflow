@@ -45,7 +45,7 @@ jobs:
     - name: Test with pytest
       run: |
         curl -o $ODA_ONTOLOGY_PATH https://raw.githubusercontent.com/oda-hub/ontology/ecdf2a61f87aac13ae7a96c0f3dad960312adae4/ontology.ttl
-        python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "not fullstack" -sv -n0 --full-trace --log-cli-level=DEBUG 
+        python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "not fullstack" -sv --full-trace --log-cli-level=DEBUG 
     - name: Test full stack
       run: |
-        python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "fullstack" -sv -n0 --full-trace --log-cli-level=DEBUG 
+        python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "fullstack" -sv --full-trace --log-cli-level=DEBUG 
