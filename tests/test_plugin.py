@@ -68,7 +68,26 @@ def test_discover_plugin():
     import cdci_data_analysis.plugins.importer as importer
 
     assert 'dispatcher_plugin_nb2workflow' in  importer.cdci_plugins_dict.keys()
-    
+
+
+def test_instrument_backend_unavailable(dispatcher_live_fixture):
+    # current behaviour is to have instrument with no products, could be changed in the future
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+       
+    c = requests.get(server + "/api/meta-data",
+                    params = {'instrument': 'example0'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    for elem in jdata[0]:
+        if isinstance(elem, dict) and 'prod_dict' in elem.keys():
+            prod_dict = elem['prod_dict']
+    assert prod_dict == {}
+
+
 def test_instrument_available(dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
     logger.info("constructed server: %s", server)
@@ -132,27 +151,6 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
                          'file_download': 'file_download_query',
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
-
-def test_mock_server_lifetime():
-    resp = requests.get('http://127.0.0.1:8000')
-    assert resp.status_code == 200
-
-def test_instrument_backend_unavailable(dispatcher_live_fixture):
-    # current behaviour is to have instrument with no products, could be changed in the future
-    server = dispatcher_live_fixture
-    logger.info("constructed server: %s", server)
-       
-    c = requests.get(server + "/api/meta-data",
-                    params = {'instrument': 'example0'})
-    logger.info("content: %s", c.text)
-    jdata = c.json()
-    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
-    logger.info(jdata)
-    assert c.status_code == 200
-    for elem in jdata[0]:
-        if isinstance(elem, dict) and 'prod_dict' in elem.keys():
-            prod_dict = elem['prod_dict']
-    assert prod_dict == {}
 
 def test_instrument_added(conf_file, dispatcher_live_fixture, mock_backend):
     server = dispatcher_live_fixture
