@@ -133,7 +133,6 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
                          'lightcurve': 'lightcurve_query',
                          'table': 'table_query'}
 
-@pytest.mark.not_safe_parallel
 def test_instrument_backend_unavailable(dispatcher_live_fixture):
     # current behaviour is to have instrument with no products, could be changed in the future
     server = dispatcher_live_fixture
