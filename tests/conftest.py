@@ -1,4 +1,5 @@
 from cdci_data_analysis.pytest_fixtures import (
+            kill_child_processes,
             dispatcher_debug,
             dispatcher_test_conf_fn,
             dispatcher_test_conf_with_external_products_url_fn,
@@ -192,7 +193,18 @@ def live_nb2service(xprocess):
         logfile = xprocess.ensure("nb2service", Starter)
 
     except Exception as e:
-        xprocess.getinfo("nb2service").terminate()
+        process_info = xprocess.getinfo('nb2service')
+        pid = process_info.pid
+        kill_child_processes(pid, signal.SIGINT)
+        os.kill(pid, signal.SIGINT)
+        process_info.terminate()
         raise e
     yield 'http://localhost:9393/'
-    xprocess.getinfo("nb2service").terminate()
+    process_info = xprocess.getinfo('nb2service')
+    pid = process_info.pid
+
+    kill_child_processes(pid, signal.SIGINT)
+    os.kill(pid, signal.SIGINT)
+
+    process_info.terminate()
+
