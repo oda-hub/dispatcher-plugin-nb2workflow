@@ -86,7 +86,12 @@ class NB2WSourceQuery(BaseQuery):
             for par in prod_source_plist:
                 parameters_dict[par.name] = par
         parameters_list = list(parameters_dict.values())
-        parameters_list.append(Name(name_format='str', name='token', value=None))
+        try:
+            token = Name(name_format='str', name='token', value=None, is_optional=True)
+        except TypeError:
+            # backward compatibility with dispatcher before "optional" parameters are introduced
+            token = Name(name_format='str', name='token', value=None)
+        parameters_list.append(token)
         return cls('src_query', parameters_list)
 
 class NB2WProductQuery(ProductQuery):
