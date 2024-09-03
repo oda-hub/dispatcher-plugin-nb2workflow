@@ -7,7 +7,7 @@ from .products import (NB2WProduct,
                        NB2WTextProduct,
                        NB2WParameterProduct,
                        NB2WProgressProduct)
-from .dataserver_dispatcher import NB2WDataDispatcher
+#from .dataserver_dispatcher import NB2WDataDispatcher
 from cdci_data_analysis.analysis.ontology import Ontology
 import os
 from functools import lru_cache, wraps
