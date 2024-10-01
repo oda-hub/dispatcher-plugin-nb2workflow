@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import json
@@ -5,7 +7,7 @@ import json
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
-from .util import AstropyTableViewParser
+from .util import AstropyTableViewParser, with_hashable_dict, OntologyMod
 from cdci_data_analysis.analysis.ontology import Ontology
 from io import StringIO
 from functools import lru_cache  
@@ -13,6 +15,8 @@ from mimetypes import guess_extension
 from magic import from_buffer as mime_from_buffer
 
 logger = logging.getLogger(__name__)
+
+
 
 # TODO: this should probably be defined in the main dispatcher code
 class TableProduct(BaseQueryProduct):
@@ -59,7 +63,6 @@ class NB2WProduct:  # TODO: decide on the name precedence
             return self.dispatcher_data_prod.get_html_draw()
         except:
             return {'image': {'div': '<br>No preview available', 'script': ''} }
-        
     
     @classmethod 
     def _init_as_list(cls, encoded_data, *args, **kwargs):
@@ -71,30 +74,73 @@ class NB2WProduct:  # TODO: decide on the name precedence
         return [cls(encoded_data, *args, **kwargs)]
 
     @classmethod
-    def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
-        par_prod_classes = parameter_products_factory(ontology_path)
+    @with_hashable_dict
+    @lru_cache
+    def _prod_list_description_analyser(cls, 
+                                        bk_descript_dict = {}, 
+                                        ontology_path = None) -> dict[str, tuple[type[NB2WProduct], str, dict]]:
 
-        mapping = {x.type_key: x for x in cls.__subclasses__() + par_prod_classes if hasattr(x, 'type_key')}
+        if ontology_path is not None:
+            onto = OntologyMod(ontology_path)
+            par_prod_class_dict = {getattr(x, 'type_key'): x for x in parameter_products_factory(onto)}
+        else:
+            onto = None
+            par_prod_class_dict = {}
+
+        mapping = {getattr(x, 'type_key'): x for x in cls.__subclasses__() if hasattr(x, 'type_key')}
+        mapping.update(par_prod_class_dict)
+
+        prod_classes_dict = {}
+        for key in bk_descript_dict.keys():
+            extra_kw = {}
+            name = key
+
+            owl_type = bk_descript_dict[key]['owl_type'] 
+            cls_owl_type = owl_type
+            extra_ttl = bk_descript_dict[key].get('extra_ttl')
+            if extra_ttl == '\n': extra_ttl = None
+
+            if extra_ttl:
+                if onto == None:
+                    logger.warning('Product description of %s contains extra_ttl, but no ontology is loaded. Ignoring extra_ttl.')
+                else:
+                    onto.parse_extra_triples(extra_ttl)
+
+                    if owl_type not in mapping.keys():
+                        prod_hierarchy = onto.get_product_hierarchy(owl_type)
+                        for ot in prod_hierarchy:
+                            if ot in mapping.keys():
+                                cls_owl_type = ot
+                                break
+                        # there is always a last resort to init as this base class
+                        # will work for NumpyDataProduct-based
+                    
+                    if cls_owl_type in par_prod_class_dict:
+                        extra_kw = {'extra_ttl': extra_ttl}
+                    
+                    label = onto.get_oda_label(owl_type)
+                    if label:
+                        name = label
+
+            prod_classes_dict[key] = (mapping.get(cls_owl_type, cls), name, extra_kw)
+        
+        return prod_classes_dict
+
+
+    @classmethod
+    def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
         
         prod_list = []
-        for key in output_description_dict.keys():
-            owl_type = output_description_dict[key]['owl_type']
 
-            extra_kw = {}
-            extra_ttl = output_description_dict[key].get('extra_ttl')
-            if extra_ttl == '\n': extra_ttl = None
-            if extra_ttl:
-                extra_kw = {'extra_ttl': extra_ttl}
-
+        for key, val in cls._prod_list_description_analyser(bk_descript_dict=output_description_dict, 
+                                                            ontology_path=ontology_path).items():
             try:
-                prod_list.extend( mapping.get(owl_type, cls)._init_as_list(output[key],
-                                                                           out_dir=out_dir,
-                                                                           name=key,
-                                                                           **extra_kw
-                                                                           )
-                                 )
+                prod_list.extend(val[0]._init_as_list(output[key],
+                                                      out_dir=out_dir, 
+                                                      name=val[1],
+                                                      **val[2]))
             except Exception as e:
-                logger.warning('unable to construct %s product: %s from this: %s ', key, e, output[key])
+                logger.error('unable to construct %s product: %s from this: %s ', key, e, output[key])
 
         return prod_list
 
@@ -131,13 +177,12 @@ class NB2WParameterProduct(NB2WProduct):
         return {'image': {'div': f'<br>value: {self.parameter_obj.value}<br>uri: {self.type_key}', 'script': ''} }
 
 @lru_cache
-def parameter_products_factory(ontology_path = None):
+def parameter_products_factory(ontology: Ontology):
     classes = []
-    onto = Ontology(ontology_path)
-    for term in onto.get_parprod_terms():
+    for term in ontology.get_parprod_terms():
         classes.append(type(f"{term.split('#')[-1]}Product", 
                             (NB2WParameterProduct,), 
-                            {'type_key': term, 'ontology_object': onto}))
+                            {'type_key': term, 'ontology_object': ontology}))
     return classes
         
 
