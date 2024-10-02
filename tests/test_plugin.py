@@ -1135,3 +1135,63 @@ def test_underscored_token(dispatcher_live_fixture, mock_backend, privileged):
         assert product['_token'][0] == encoded_token
     else:
         assert '_token' not in product
+
+@pytest.mark.fullstack
+@pytest.mark.parametrize('api', [True, False])
+def test_output_labels_and_uris(live_nb2service,
+                                conf_file,
+                                dispatcher_live_fixture,
+                                api):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+        
+        while True:
+            c = requests.get(server + "/run_analysis",
+                            params = {'instrument': 'example',
+                                    'query_status': 'new',
+                                    'query_type': 'Real',
+                                    'product_type': 'product_label',
+                                    'api': api,
+                                    })
+            assert c.status_code == 200 
+            jdata = c.json()    
+            if jdata['exit_status']['job_status'] == 'done':
+                break
+            time.sleep(5)
+        
+        logger.info(jdata)
+        
+        labels = jdata['products']['labels']
+        getlabel = lambda n: [v for k, v in labels.items() if k==n][0]
+        assert getlabel('dummy') == None
+        assert getlabel('dummy_ext') == 'Dummy extended'
+        assert getlabel('other_int') == 'integer_plus_5'
+        assert getlabel('atable') == 'Astropy table'
+        assert getlabel('lcurve') == 'Light curve'
+        assert getlabel('pict') == 'Picture'
+
+        prefix = 'http://odahub.io/ontology#'
+        uris = jdata['products']['prod_uris']
+        geturi = lambda n: [v for k, v in uris.items() if k==n][0]
+        assert geturi('dummy') == prefix + 'String'
+        assert geturi('dummy_ext') == prefix + 'ODATextProduct'
+        assert geturi('other_int') == prefix + 'Integer'
+        assert geturi('atable') == prefix + 'ODAAstropyTable'
+        assert geturi('lcurve') == prefix + 'LightCurve'
+        assert geturi('pict') == prefix + 'ODAPictureProduct'
+
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
