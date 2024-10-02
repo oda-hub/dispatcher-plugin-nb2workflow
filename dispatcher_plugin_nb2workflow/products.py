@@ -5,10 +5,10 @@ import os
 import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
-from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
+from cdci_data_analysis.analysis.parameters import Parameter
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
-from .util import AstropyTableViewParser, with_hashable_dict, OntologyMod
-from cdci_data_analysis.analysis.ontology import Ontology
+from .util import AstropyTableViewParser, with_hashable_dict
+from oda_api.ontology_helper import Ontology
 from io import StringIO
 from functools import lru_cache  
 from mimetypes import guess_extension
@@ -26,7 +26,7 @@ class TableProduct(BaseQueryProduct):
         super().__init__(name, file_name=fname, file_dir = file_dir, **kwargs)
 
     def encode(self):
-        self.table_data.encode()
+        return self.table_data.encode()
 
     def write(self, file_name=None, overwrite=True, file_dir=None):
         if file_name:
@@ -36,22 +36,32 @@ class TableProduct(BaseQueryProduct):
             
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
         
-class NB2WProduct:  # TODO: decide on the name precedence 
-    def __init__(self, encoded_data, data_product_type = BaseQueryProduct, out_dir = None, name = 'nb2w'):
+class NB2WProduct:
+    def __init__(self, 
+                 encoded_data, 
+                 data_product_type=BaseQueryProduct,
+                 out_dir='./', 
+                 name='nb2w', 
+                 label=None):
+
+        # this constructor is only valid for NumpyDataProduct-based products
+        
         self.name = name
+        self.label = label
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
-        numpy_data_prod = NumpyDataProduct.decode(encoded_data) # most products are NumpyDataProduct so default: 
-                                                                # we follow BaseQueryProduct implementation
+        numpy_data_prod = NumpyDataProduct.decode(encoded_data) 
+        
         if not numpy_data_prod.name:
             numpy_data_prod.name = self.name
-        else:
-            self.name = numpy_data_prod.name
-        self.dispatcher_data_prod = data_product_type(name = self.name, 
-                                                     data= numpy_data_prod,
-                                                     meta_data=metadata,
-                                                     file_dir = out_dir,
-                                                     file_name = f"{self.name}.fits")
+
+        self.dispatcher_data_prod = data_product_type(
+            name=self.name, 
+            data=numpy_data_prod,
+            meta_data=metadata,
+            file_dir=out_dir,
+            file_name = f"{self.name}.fits")
+    
     
     def write(self):
         file_path = self.dispatcher_data_prod.file_path
@@ -59,10 +69,7 @@ class NB2WProduct:  # TODO: decide on the name precedence
         self.file_path = file_path.path
     
     def get_html_draw(self):
-        try:
-            return self.dispatcher_data_prod.get_html_draw()
-        except:
-            return {'image': {'div': '<br>No preview available', 'script': ''} }
+        return {'image': {'div': '<br>No preview available', 'script': ''} }
     
     @classmethod 
     def _init_as_list(cls, encoded_data, *args, **kwargs):
@@ -81,7 +88,7 @@ class NB2WProduct:  # TODO: decide on the name precedence
                                         ontology_path = None) -> dict[str, tuple[type[NB2WProduct], str, dict]]:
 
         if ontology_path is not None:
-            onto = OntologyMod(ontology_path)
+            onto = Ontology(ontology_path)
             par_prod_class_dict = {getattr(x, 'type_key'): x for x in parameter_products_factory(onto)}
         else:
             onto = None
@@ -116,11 +123,11 @@ class NB2WProduct:  # TODO: decide on the name precedence
                         # will work for NumpyDataProduct-based
                     
                     if cls_owl_type in par_prod_class_dict:
-                        extra_kw = {'extra_ttl': extra_ttl}
+                        extra_kw.update({'extra_ttl': extra_ttl})
                     
                     label = onto.get_oda_label(owl_type)
                     if label:
-                        name = label
+                        extra_kw.update({'label': label})
 
             prod_classes_dict[key] = (mapping.get(cls_owl_type, cls), name, extra_kw)
         
@@ -128,7 +135,7 @@ class NB2WProduct:  # TODO: decide on the name precedence
 
 
     @classmethod
-    def prod_list_factory(cls, output_description_dict, output, out_dir = None, ontology_path = None):
+    def prod_list_factory(cls, output_description_dict, output, out_dir = './', ontology_path = None):
         
         prod_list = []
 
@@ -162,8 +169,10 @@ class NB2WParameterProduct(NB2WProduct):
                  value, 
                  out_dir=None, 
                  name='paramdata',
-                 extra_ttl=None):
+                 extra_ttl=None,
+                 label=None):
         self.name = name
+        self.label = label
         self.parameter_obj = Parameter.from_owl_uri(owl_uri=self.type_key,
                                                     extra_ttl=extra_ttl,
                                                     ontology_path=self.ontology_path,
@@ -189,9 +198,10 @@ def parameter_products_factory(ontology: Ontology):
 class NB2WBinaryProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
-    def __init__(self, encoded_data, out_dir = None, name = 'bindata'):
+    def __init__(self, encoded_data, out_dir='./', name='bindata', label=None):
         self.out_dir = out_dir
         self.name = name
+        self.label = label
         self.data_prod = BinaryProduct.decode(encoded_data)
         self.mime_type = mime_from_buffer(self.data_prod.bin_data, mime=True)
     
@@ -206,9 +216,10 @@ class NB2WBinaryProduct(NB2WProduct):
 class NB2WTextProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODATextProduct'
     
-    def __init__(self, text_data, out_dir = None, name = 'text'):
+    def __init__(self, text_data, out_dir='./', name='text', label=None):
         self.out_dir = out_dir
         self.name = name
+        self.label = label
         self.data_prod = str(text_data)
         
     def write(self):
@@ -232,13 +243,12 @@ class NB2WProgressProduct(NB2WProduct):
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
     
-    def __init__(self, encoded_data, out_dir = None, name = 'picture'):
+    def __init__(self, encoded_data, out_dir='./', name='picture', label=None):
         self.name = name
+        self.label = label
         self.out_dir = out_dir
         self.data_prod = PictureProduct.decode(encoded_data)
-        if self.data_prod.name:
-            self.name = self.data_prod.name
-        else:
+        if not self.data_prod.name:
             self.data_prod.name = self.name
 
     def write(self):
@@ -255,14 +265,13 @@ class NB2WPictureProduct(NB2WProduct):
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
-    def __init__(self, encoded_data, out_dir = None, name = 'astropy_table'):
+    def __init__(self, encoded_data, out_dir='./', name='astropy_table', label=None):
         self.name = name
+        self.label = label
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         table_data_prod = ODAAstropyTable.decode(encoded_data)
-        if table_data_prod.name:
-            self.name = table_data_prod.name
-        else:
+        if not table_data_prod.name:
             table_data_prod.name = self.name
         self.dispatcher_data_prod = TableProduct(name = self.name, 
                                                  table_data = table_data_prod,
@@ -286,8 +295,8 @@ class NB2WAstropyTableProduct(NB2WProduct):
 class NB2WLightCurveProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#LightCurve'
         
-    def __init__(self, encoded_data, out_dir = None, name = 'lc'):
-        super().__init__(encoded_data, data_product_type = LightCurveProduct, out_dir = out_dir, name = name)
+    def __init__(self, encoded_data, out_dir=None, name='lc', label=None):
+        super().__init__(encoded_data, data_product_type=LightCurveProduct, out_dir='./', name=name, label=label)
         
     def get_html_draw(self):
         unit_ID=1 # TODO: it could be optional
@@ -312,11 +321,14 @@ class NB2WLightCurveProduct(NB2WProduct):
 class NB2WSpectrumProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Spectrum'
     
-    def __init__(self, encoded_data, out_dir=None, name = 'spec'):
-        super().__init__(encoded_data, data_product_type=SpectrumProduct, out_dir=out_dir, name = name)
+    def __init__(self, encoded_data, out_dir='./', name='spec', label=None):
+        super().__init__(encoded_data, data_product_type=SpectrumProduct, out_dir=out_dir, name=name, label=label)
         
 class NB2WImageProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Image'
     
-    def __init__(self, encoded_data, out_dir = None, name = 'image'):
-        super().__init__(encoded_data, data_product_type = ImageProduct, out_dir = out_dir, name = name)
+    def __init__(self, encoded_data, out_dir='./', name='image', label=None):
+        super().__init__(encoded_data, data_product_type=ImageProduct, out_dir=out_dir, name=name, label=label)
+
+    def get_html_draw(self):
+        return self.dispatcher_data_prod.get_html_draw()  # type: ignore
