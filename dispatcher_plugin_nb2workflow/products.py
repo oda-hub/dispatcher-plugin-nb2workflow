@@ -42,12 +42,12 @@ class NB2WProduct:
                  data_product_type=BaseQueryProduct,
                  out_dir='./', 
                  name='nb2w', 
-                 label=None):
+                 extra_metadata={}):
 
         # this constructor is only valid for NumpyDataProduct-based products
         
         self.name = name
-        self.label = label
+        self.extra_metadata = extra_metadata 
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         numpy_data_prod = NumpyDataProduct.decode(encoded_data) 
@@ -125,9 +125,12 @@ class NB2WProduct:
                     if cls_owl_type in par_prod_class_dict:
                         extra_kw.update({'extra_ttl': extra_ttl})
                     
-                    label = onto.get_oda_label(owl_type)
-                    if label:
-                        extra_kw.update({'label': label})
+                    extra_metadata = {}
+                    for emt in ['label', 'description', 'group']:
+                        em = onto.get_direct_annotation(owl_type, emt)
+                        if em:
+                            extra_metadata[emt] = em
+                    extra_kw.update({'extra_metadata': extra_metadata})
 
             prod_classes_dict[key] = (mapping.get(cls_owl_type, cls), name, extra_kw)
         
@@ -170,9 +173,9 @@ class NB2WParameterProduct(NB2WProduct):
                  out_dir=None, 
                  name='paramdata',
                  extra_ttl=None,
-                 label=None):
+                 extra_metadata={}):
         self.name = name
-        self.label = label
+        self.extra_metadata = extra_metadata
         self.parameter_obj = Parameter.from_owl_uri(owl_uri=self.type_key,
                                                     extra_ttl=extra_ttl,
                                                     ontology_path=self.ontology_path,
@@ -198,10 +201,10 @@ def parameter_products_factory(ontology: Ontology):
 class NB2WBinaryProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
-    def __init__(self, encoded_data, out_dir='./', name='bindata', label=None):
+    def __init__(self, encoded_data, out_dir='./', name='bindata', extra_metadata={}):
         self.out_dir = out_dir
         self.name = name
-        self.label = label
+        self.extra_metadata = extra_metadata
         self.data_prod = BinaryProduct.decode(encoded_data)
         self.mime_type = mime_from_buffer(self.data_prod.bin_data, mime=True)
     
@@ -216,10 +219,10 @@ class NB2WBinaryProduct(NB2WProduct):
 class NB2WTextProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODATextProduct'
     
-    def __init__(self, text_data, out_dir='./', name='text', label=None):
+    def __init__(self, text_data, out_dir='./', name='text', extra_metadata={}):
         self.out_dir = out_dir
         self.name = name
-        self.label = label
+        self.extra_metadata = extra_metadata
         self.data_prod = str(text_data)
         
     def write(self):
@@ -243,9 +246,9 @@ class NB2WProgressProduct(NB2WProduct):
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
     
-    def __init__(self, encoded_data, out_dir='./', name='picture', label=None):
+    def __init__(self, encoded_data, out_dir='./', name='picture', extra_metadata={}):
         self.name = name
-        self.label = label
+        self.extra_metadata = extra_metadata
         self.out_dir = out_dir
         self.data_prod = PictureProduct.decode(encoded_data)
         if not self.data_prod.name:
@@ -265,9 +268,9 @@ class NB2WPictureProduct(NB2WProduct):
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
-    def __init__(self, encoded_data, out_dir='./', name='astropy_table', label=None):
+    def __init__(self, encoded_data, out_dir='./', name='astropy_table', extra_metadata={}):
         self.name = name
-        self.label = label
+        self.extra_metadata = extra_metadata
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
         table_data_prod = ODAAstropyTable.decode(encoded_data)
@@ -295,8 +298,8 @@ class NB2WAstropyTableProduct(NB2WProduct):
 class NB2WLightCurveProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#LightCurve'
         
-    def __init__(self, encoded_data, out_dir=None, name='lc', label=None):
-        super().__init__(encoded_data, data_product_type=LightCurveProduct, out_dir='./', name=name, label=label)
+    def __init__(self, encoded_data, out_dir=None, name='lc', extra_metadata={}):
+        super().__init__(encoded_data, data_product_type=LightCurveProduct, out_dir='./', name=name, extra_metadata=extra_metadata)
         
     def get_html_draw(self):
         unit_ID=1 # TODO: it could be optional
@@ -321,14 +324,14 @@ class NB2WLightCurveProduct(NB2WProduct):
 class NB2WSpectrumProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Spectrum'
     
-    def __init__(self, encoded_data, out_dir='./', name='spec', label=None):
-        super().__init__(encoded_data, data_product_type=SpectrumProduct, out_dir=out_dir, name=name, label=label)
+    def __init__(self, encoded_data, out_dir='./', name='spec', extra_metadata={}):
+        super().__init__(encoded_data, data_product_type=SpectrumProduct, out_dir=out_dir, name=name, extra_metadata=extra_metadata)
         
 class NB2WImageProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Image'
     
-    def __init__(self, encoded_data, out_dir='./', name='image', label=None):
-        super().__init__(encoded_data, data_product_type=ImageProduct, out_dir=out_dir, name=name, label=label)
+    def __init__(self, encoded_data, out_dir='./', name='image', extra_metadata={}):
+        super().__init__(encoded_data, data_product_type=ImageProduct, out_dir=out_dir, name=name, extra_metadata=extra_metadata)
 
     def get_html_draw(self):
         return self.dispatcher_data_prod.get_html_draw()  # type: ignore

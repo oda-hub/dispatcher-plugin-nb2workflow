@@ -159,7 +159,7 @@ class NB2WProductQuery(ProductQuery):
 
         np_dp_list, bin_dp_list, tab_dp_list, bin_im_dp_list, text_dp_list, progress_dp_list = [], [], [], [], [], []
         if api is True:
-            labels = {}
+            extra_meta = {}
             prod_uris = {}
             for product in prod_list.prod_list:
                 if isinstance(product, NB2WAstropyTableProduct):
@@ -180,10 +180,10 @@ class NB2WProductQuery(ProductQuery):
                 else: # NB2WProduct contains NumpyDataProd by default
                     np_dp_list.append(product.dispatcher_data_prod.data)
                 
-                labels[product.name] = getattr(product, 'label', None)
+                extra_meta[product.name] = getattr(product, 'extra_metadata', {})
                 prod_uris[product.name] = getattr(product, 'type_key', None)
 
-            query_out.prod_dictionary['labels'] = labels
+            query_out.prod_dictionary['extra_metadata'] = extra_meta
             query_out.prod_dictionary['prod_uris'] = prod_uris
 
             query_out.prod_dictionary['numpy_data_product_list'] = np_dp_list
@@ -195,7 +195,7 @@ class NB2WProductQuery(ProductQuery):
 
         else:
             prod_name_list, file_name_list, image_list, progress_product_list = [], [], [], []
-            labels = {}
+            extra_meta = {}
             prod_uris = {}
 
             for product in prod_list.prod_list:
@@ -213,13 +213,13 @@ class NB2WProductQuery(ProductQuery):
                     progress_product_list.append(html_draw)
 
                 prod_name_list.append(product.name)
-                labels[product.name] = getattr(product, 'label', None)
+                extra_meta[product.name] = getattr(product, 'extra_metadata', {})
                 prod_uris[product.name] = getattr(product, 'type_key', None)
 
             query_out.prod_dictionary['file_name'] = file_name_list
             query_out.prod_dictionary['image'] = image_list[0] if len(image_list) == 1 else image_list
             query_out.prod_dictionary['name'] = prod_name_list
-            query_out.prod_dictionary['labels'] = labels
+            query_out.prod_dictionary['extra_metadata'] = extra_meta
             query_out.prod_dictionary['prod_uris'] = prod_uris
             
             if len(prod_list.prod_list) == 1 and isinstance(prod_list.prod_list[0], NB2WProgressProduct):

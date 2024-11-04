@@ -1172,8 +1172,8 @@ def test_output_labels_and_uris(live_nb2service,
         
         logger.info(jdata)
         
-        labels = jdata['products']['labels']
-        getlabel = lambda n: [v for k, v in labels.items() if k==n][0]
+        extra_meta = jdata['products']['extra_metadata']
+        getlabel = lambda n: [v.get('label') for k, v in extra_meta.items() if k==n][0]
         assert getlabel('dummy') == None
         assert getlabel('dummy_ext') == 'Dummy extended'
         assert getlabel('other_int') == 'integer_plus_5'
