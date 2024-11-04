@@ -83,9 +83,11 @@ class NB2WProduct:
     @classmethod
     @with_hashable_dict
     @lru_cache
-    def _prod_list_description_analyser(cls, 
-                                        bk_descript_dict = {}, 
-                                        ontology_path = None) -> dict[str, tuple[type[NB2WProduct], str, dict]]:
+    def _prod_list_description_analyser(
+        cls, 
+        bk_descript_dict = {}, 
+        ontology_path = None
+        ) -> dict[str, tuple[type[NB2WProduct], str, dict]]:
 
         if ontology_path is not None:
             onto = Ontology(ontology_path)
@@ -176,11 +178,12 @@ class NB2WParameterProduct(NB2WProduct):
                  extra_metadata={}):
         self.name = name
         self.extra_metadata = extra_metadata
-        self.parameter_obj = Parameter.from_owl_uri(owl_uri=self.type_key,
-                                                    extra_ttl=extra_ttl,
-                                                    ontology_path=self.ontology_path,
-                                                    value=value,
-                                                    name=name)
+        self.parameter_obj = Parameter.from_owl_uri(
+            owl_uri=self.type_key,
+            extra_ttl=extra_ttl,
+            ontology_path=self.ontology_path,
+            value=value,
+            name=name)
     
     def write(self):
         pass
@@ -201,7 +204,11 @@ def parameter_products_factory(ontology: Ontology):
 class NB2WBinaryProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODABinaryProduct'
     
-    def __init__(self, encoded_data, out_dir='./', name='bindata', extra_metadata={}):
+    def __init__(self, 
+                 encoded_data, 
+                 out_dir='./', 
+                 name='bindata', 
+                 extra_metadata={}):
         self.out_dir = out_dir
         self.name = name
         self.extra_metadata = extra_metadata
@@ -219,7 +226,11 @@ class NB2WBinaryProduct(NB2WProduct):
 class NB2WTextProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODATextProduct'
     
-    def __init__(self, text_data, out_dir='./', name='text', extra_metadata={}):
+    def __init__(self, 
+                 text_data, 
+                 out_dir='./', 
+                 name='text', 
+                 extra_metadata={}):
         self.out_dir = out_dir
         self.name = name
         self.extra_metadata = extra_metadata
@@ -246,7 +257,11 @@ class NB2WProgressProduct(NB2WProduct):
 class NB2WPictureProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#ODAPictureProduct'  
     
-    def __init__(self, encoded_data, out_dir='./', name='picture', extra_metadata={}):
+    def __init__(self, 
+                 encoded_data, 
+                 out_dir='./', 
+                 name='picture', 
+                 extra_metadata={}):
         self.name = name
         self.extra_metadata = extra_metadata
         self.out_dir = out_dir
@@ -268,7 +283,11 @@ class NB2WPictureProduct(NB2WProduct):
 class NB2WAstropyTableProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#ODAAstropyTable'
     
-    def __init__(self, encoded_data, out_dir='./', name='astropy_table', extra_metadata={}):
+    def __init__(self, 
+                 encoded_data, 
+                 out_dir='./', 
+                 name='astropy_table', 
+                 extra_metadata={}):
         self.name = name
         self.extra_metadata = extra_metadata
         metadata = encoded_data.get('meta_data', {})
@@ -298,8 +317,16 @@ class NB2WAstropyTableProduct(NB2WProduct):
 class NB2WLightCurveProduct(NB2WProduct): 
     type_key = 'http://odahub.io/ontology#LightCurve'
         
-    def __init__(self, encoded_data, out_dir=None, name='lc', extra_metadata={}):
-        super().__init__(encoded_data, data_product_type=LightCurveProduct, out_dir='./', name=name, extra_metadata=extra_metadata)
+    def __init__(self, 
+                 encoded_data, 
+                 out_dir=None, 
+                 name='lc', 
+                 extra_metadata={}):
+        super().__init__(encoded_data, 
+                         data_product_type=LightCurveProduct, 
+                         out_dir='./', 
+                         name=name, 
+                         extra_metadata=extra_metadata)
         
     def get_html_draw(self):
         unit_ID=1 # TODO: it could be optional
@@ -324,14 +351,29 @@ class NB2WLightCurveProduct(NB2WProduct):
 class NB2WSpectrumProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Spectrum'
     
-    def __init__(self, encoded_data, out_dir='./', name='spec', extra_metadata={}):
-        super().__init__(encoded_data, data_product_type=SpectrumProduct, out_dir=out_dir, name=name, extra_metadata=extra_metadata)
+    def __init__(self, 
+                 encoded_data, 
+                 out_dir='./', 
+                 name='spec', 
+                 extra_metadata={}):
+        super().__init__(encoded_data, 
+                         data_product_type=SpectrumProduct, 
+                         out_dir=out_dir, name=name, 
+                         extra_metadata=extra_metadata)
         
 class NB2WImageProduct(NB2WProduct):
     type_key = 'http://odahub.io/ontology#Image'
     
-    def __init__(self, encoded_data, out_dir='./', name='image', extra_metadata={}):
-        super().__init__(encoded_data, data_product_type=ImageProduct, out_dir=out_dir, name=name, extra_metadata=extra_metadata)
+    def __init__(self, 
+                 encoded_data, 
+                 out_dir='./', 
+                 name='image', 
+                 extra_metadata={}):
+        super().__init__(encoded_data, 
+                         data_product_type=ImageProduct, 
+                         out_dir=out_dir, 
+                         name=name, 
+                         extra_metadata=extra_metadata)
 
     def get_html_draw(self):
         return self.dispatcher_data_prod.get_html_draw()  # type: ignore

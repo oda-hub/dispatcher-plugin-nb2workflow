@@ -71,8 +71,11 @@ class NB2WSourceQuery(BaseQuery):
         parameters_dict = {}
         for product_name in product_names:
             backend_param_dict = backend_options[product_name]['parameters']
-            prod_source_plist = deepcopy(construct_parameter_lists(bk_descript_dict=backend_param_dict, 
-                                                                   ontology_path=ontology_path)['source_plist'])
+            prod_source_plist = deepcopy(
+                construct_parameter_lists(
+                    bk_descript_dict=backend_param_dict, 
+                    ontology_path=ontology_path
+                    )['source_plist'])
             for par in prod_source_plist:
                 parameters_dict[par.name] = par
         parameters_list = list(parameters_dict.values())
@@ -89,8 +92,9 @@ class NB2WProductQuery(ProductQuery):
         self.backend_product_name = backend_product_name
         self.backend_output_dict = backend_output_dict
         self.backend_param_dict = backend_param_dict
-        parameter_lists = construct_parameter_lists(bk_descript_dict=backend_param_dict, 
-                                                    ontology_path=ontology_path)
+        parameter_lists = construct_parameter_lists(
+            bk_descript_dict=backend_param_dict, 
+            ontology_path=ontology_path)
         self.par_name_substitution = parameter_lists['par_name_substitution']
         plist = deepcopy(parameter_lists['prod_plist'])
         self.ontology_path = ontology_path
