@@ -127,7 +127,12 @@ def test_default_src_par_value(dispatcher_live_fixture, mock_backend):
     logger.info(json.dumps(jdata, indent=4, sort_keys=True))
     logger.info(jdata)
     assert c.status_code == 200
-    src_query_descr = json.loads([x for x in jdata[0] if "src_query" in x][0])
+    try:
+        # when queries are json-encoded strings in metadata
+        src_query_descr = json.loads([x for x in jdata[0] if "src_query" in x][0])
+    except IndexError:
+        # when they are unencoded lists of objects
+        src_query_descr = [x for x in jdata[0] if isinstance(x, list) and x[0].get('query_name') == "src_query"][0]
     T1_value = [x for x in src_query_descr if x.get('name') == 'T1'][0]['value']
     assert T1_value == '2021-06-25T05:59:37.000'
 
