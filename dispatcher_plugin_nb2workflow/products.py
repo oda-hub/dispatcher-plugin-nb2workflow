@@ -110,7 +110,7 @@ class NB2WProduct:
             if extra_ttl == '\n': extra_ttl = None
 
             if extra_ttl:
-                if onto == None:
+                if onto is None:
                     logger.warning('Product description of %s contains extra_ttl, but no ontology is loaded. Ignoring extra_ttl.')
                 else:
                     onto.parse_extra_triples(extra_ttl)
