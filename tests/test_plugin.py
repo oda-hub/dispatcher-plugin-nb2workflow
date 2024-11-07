@@ -1200,3 +1200,124 @@ def test_output_labels_and_uris(live_nb2service,
     finally:
         with open(conf_file, 'w') as fd:
             fd.write(conf_bk)
+
+@pytest.mark.fullstack
+@pytest.mark.parametrize('api', [True, False])
+@pytest.mark.parametrize('opt_par0', [None, 4.2, '\x00'])
+@pytest.mark.parametrize('opt_par1', [None, 2.4, '\x00'])
+def test_optional_parameters(live_nb2service,
+                             conf_file,
+                             dispatcher_live_fixture,
+                             api,
+                             opt_par0,
+                             opt_par1):
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+
+        c = requests.get(server + '/meta-data',
+                         params = {'instrument': 'example'})
+        assert c.status_code == 200
+        
+        optional_query_meta = [q for q in c.json()[0][4:] if q[1]['product_name'] == "optional_par"][0]
+        opt_pars = optional_query_meta[2:]
+
+        for par in opt_pars:
+            if par['name'] != 'non_opt':
+                assert par['restrictions']['is_optional']
+            else:
+                assert not par['restrictions']['is_optional']
+
+        defaults = {p['name']: p['value'] for p in opt_pars}
+        expected = defaults.copy()
+
+        if opt_par0 is not None:
+            expected[opt_pars[0]['name']] = None if opt_par0=='\x00' else opt_par0
+
+        if opt_par1 is not None:
+            expected[opt_pars[1]['name']] = None if opt_par1=='\x00' else opt_par1
+
+        req = {'instrument': 'example',
+               'query_status': 'new',
+               'query_type': 'Real',
+               'product_type': 'optional_par',
+               'opt_par0': opt_par0,
+               'opt_par1': opt_par1,
+               }
+        if api:
+            req['api'] = 'yes'
+
+        while True:
+            c = requests.get(server + "/run_analysis",
+                            params = req)
+            assert c.status_code == 200 
+            jdata = c.json()
+            if jdata['exit_status']['job_status'] == 'done':
+                break
+            time.sleep(5)
+        
+        logger.info(jdata)
+        
+        if api:
+            assert {p['name']: p['value'] for p in jdata['products']['text_product_list']} == expected
+        else:
+            for i, (k, v) in enumerate(expected.items()):
+                prod_repr = jdata['products']['image'][i]['image']['div']
+                m = re.search(r'value: ([^<]+)', prod_repr)
+                assert m.group(1) == str(v)
+
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
+
+
+@pytest.mark.fullstack
+def test_nonoptional_parameter_is_not_nullable(
+    live_nb2service,
+    conf_file,
+    dispatcher_live_fixture
+    ):
+
+    with open(conf_file, 'r') as fd:
+        conf_bk = fd.read()
+      
+    try:
+        with open(conf_file, 'w') as fd:
+            fd.write( config_real_nb2service % live_nb2service )
+        
+        server = dispatcher_live_fixture
+        logger.info("constructed server: %s", server)    
+
+        #ensure new conf file readed 
+        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        assert c.status_code == 200 
+
+        req = {'instrument': 'example',
+               'query_status': 'new',
+               'query_type': 'Real',
+               'product_type': 'optional_par',
+               'non_opt': '\x00'
+               }
+        c = requests.get(server + "/run_analysis",
+                        params = req)
+ 
+        assert c.status_code == 400
+        print("content:", c.text)
+        jdata=c.json()
+
+        assert jdata['error_message'] == 'Non-optional parameter non_opt is set to None'
+
+    finally:
+        with open(conf_file, 'w') as fd:
+            fd.write(conf_bk)
