@@ -1173,6 +1173,8 @@ def test_output_labels_and_uris(live_nb2service,
             jdata = c.json()    
             if jdata['exit_status']['job_status'] == 'done':
                 break
+            elif jdata['exit_status']['job_status'] == 'failed':
+                raise RuntimeError(jdata['exit_status']['message'])
             time.sleep(5)
         
         logger.info(jdata)
@@ -1264,6 +1266,8 @@ def test_optional_parameters(live_nb2service,
             jdata = c.json()
             if jdata['exit_status']['job_status'] == 'done':
                 break
+            elif jdata['exit_status']['job_status'] == 'failed':
+                raise RuntimeError(jdata['exit_status']['message'])
             time.sleep(5)
         
         logger.info(jdata)
