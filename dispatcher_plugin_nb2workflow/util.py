@@ -1,9 +1,21 @@
 import logging
 from html.parser import HTMLParser
 from functools import wraps
-from json import dumps
+from json import dumps, JSONEncoder
 
 logger = logging.getLogger()
+
+class CustomJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, type):
+                return dict(type_object=repr(obj))
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        
 
 class AstropyTableViewParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
@@ -37,7 +49,7 @@ class AstropyTableViewParser(HTMLParser):
 
 class HashableDict(dict):
     def __hash__(self):  #  type: ignore
-        return hash(dumps(self, sort_keys=True))
+        return hash(dumps(self, sort_keys=True, cls=CustomJSONEncoder))
 
 def with_hashable_dict(func):
     @wraps(func)
