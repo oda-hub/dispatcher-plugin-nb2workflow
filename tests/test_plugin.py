@@ -657,6 +657,8 @@ def test_file_download(live_nb2service,
                                             _is_mmoda_url=True,
                                             return_archive=False,
                                             )
+        if not public:
+            download_products_params_url['token'] = encoded_token
 
         dpars = urlencode(download_products_params_url)
         download_url_host = os.path.join(dispatcher_test_conf_with_external_products_url["products_url"], "dispatch-data/download_file")
@@ -665,6 +667,9 @@ def test_file_download(live_nb2service,
                                         _is_mmoda_url=True,
                                         return_archive=False,
                                         )
+        if not public:
+            download_file_params_url['token'] = encoded_token
+
         dpars = urlencode(download_file_params_url)
         dummy_file_url = f'{download_url_host}?{dpars}'
         assert dummy_file_url == jdata['products']['analysis_parameters']['dummy_file']
