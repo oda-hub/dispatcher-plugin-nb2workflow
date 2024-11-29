@@ -36,6 +36,9 @@ def construct_parameter_lists(bk_descript_dict = {}, ontology_path = None):
             onto.parse_extra_triples(pval.get("extra_ttl"), parse_oda_annotations = False)
         onto_class_hierarchy = onto.get_parameter_hierarchy(pval['owl_type'])
         src_query_owl_uri_set = set(onto_class_hierarchy).intersection(src_query_pars_uris.keys())
+        optional_kw = {}
+        if 'is_optional' in pval.keys():
+            optional_kw['is_optional'] = pval['is_optional']
         if src_query_owl_uri_set:
             default_pname = src_query_pars_uris[src_query_owl_uri_set.pop()]
             par_name_substitution[ default_pname ] = pname
@@ -43,19 +46,21 @@ def construct_parameter_lists(bk_descript_dict = {}, ontology_path = None):
                                                        value=pval['default_value'],
                                                        name=default_pname,
                                                        ontology_object=onto,
-                                                       extra_ttl=pval.get("extra_ttl")
+                                                       extra_ttl=pval.get("extra_ttl"),
+                                                       **optional_kw
                                                        ))
         else:
-            #if param name coincides with the SourceQuery default names, but it's not properly annotated, rename
             cur_name = pname
             if pname in src_query_pars_uris.values():
+                #if param name coincides with the SourceQuery default names, but it's not properly annotated, rename
                 cur_name = pname + '_rename'
                 par_name_substitution[ cur_name ] = pname
             plist.append(Parameter.from_owl_uri(pval['owl_type'],
                                                 value=pval['default_value'],
                                                 name=cur_name,
                                                 ontology_object=onto,
-                                                extra_ttl=pval.get("extra_ttl")
+                                                extra_ttl=pval.get("extra_ttl"),
+                                                **optional_kw
                                                 ))
     return {'source_plist': source_plist,
             'prod_plist': plist,

@@ -183,7 +183,8 @@ class NB2WParameterProduct(NB2WProduct):
             extra_ttl=extra_ttl,
             ontology_path=self.ontology_path,
             value=value,
-            name=name)
+            name=name,
+            is_optional=True)
     
     def write(self):
         pass

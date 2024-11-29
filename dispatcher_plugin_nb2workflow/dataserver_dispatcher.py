@@ -201,6 +201,11 @@ class NB2WDataDispatcher:
             param_dict['_async_request'] = "yes"
 
         url = '/'.join([self.data_server_url.strip('/'), 'api/v1.0/get', task.strip('/')])
+        
+        for k,v in param_dict.items():
+            if v is None and k != '_token':
+                param_dict[k] = '\x00'
+
         res = requests.get(url, params = param_dict)
         if res.status_code == 200:
             resroot = res.json()['data'] if run_asynch else res.json()
