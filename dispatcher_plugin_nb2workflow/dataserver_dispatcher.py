@@ -163,6 +163,30 @@ class NB2WDataDispatcher:
                                      f'{task.strip("/")} during get_progress_run, ',
                                      f'connection status code: {str(res_trace.status_code)}. '
                                      f'error: \n{e_message}')
+                else:
+                    if 'application/json' in res.headers.get('content-type', ''):
+                        e_message = res.json()['exceptions'][0]
+                    else:
+                        e_message = res.text
+                    query_out.set_failed(f'Error in the backend when extracting the jobdir during the'
+                                         f' execution of the task {task.strip("/")} during get_progress_run',
+                                         message='connection status code: ' + str(res.status_code),
+                                         e_message=e_message,
+                                         job_status='failed')
+                    logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
+                                 f'error: \n{e_message}')
+            # else:
+            #     if 'application/json' in res.headers.get('content-type', ''):
+            #         e_message = res.json()['exceptions'][0]
+            #     else:
+            #         e_message = res.text
+            #     query_out.set_failed(f'Error in the backend when extracting the jobdir during the'
+            #                          f' execution of the task {task.strip("/")} during get_progress_run',
+            #                          message='connection status code: ' + str(res.status_code),
+            #                          e_message=e_message,
+            #                          job_status='failed')
+            #     logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
+            #                  f'error: \n{e_message}')
         else:
             if 'application/json' in res.headers.get('content-type', ''):
                 e_message = res.json()['exceptions'][0]
