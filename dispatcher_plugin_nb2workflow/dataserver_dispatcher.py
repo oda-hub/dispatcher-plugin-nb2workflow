@@ -138,9 +138,7 @@ class NB2WDataDispatcher:
                 if jobdir is not None:
                     jobdir = jobdir.split('/')[-1]
                     trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
-                    query_string = {}
-                    if not self.include_glued_output:
-                        query_string = {'include_glued_output': False}
+                    query_string = {'include_glued_output': False} if not self.include_glued_output else {}
                     res_trace = requests.get(trace_url, params=query_string)
                     if res_trace.status_code in [200, 201]:
                         res_trace_dict = {
@@ -150,57 +148,33 @@ class NB2WDataDispatcher:
                         workflow_status = 'progress' if workflow_status == 'started' else workflow_status
                         query_out.set_status(0, job_status=workflow_status)
                     else:
-                        if 'application/json' in res_trace.headers.get('content-type', ''):
-                            e_message = res_trace.json()['exceptions'][0]
-                        else:
-                            e_message = res_trace.text
-                        query_out.set_failed('Error in the backend when requesting trace '
-                                             f'for the task {task.strip("/")} during get_progress_run',
-                                             message='connection status code: ' + str(res_trace.status_code),
-                                             e_message=e_message,
-                                             job_status='failed')
-                        logger.error('Error in the backend when requesting trace for the task '
-                                     f'{task.strip("/")} during get_progress_run, ',
-                                     f'connection status code: {str(res_trace.status_code)}. '
-                                     f'error: \n{e_message}')
+                        self._handle_backend_error(res_trace, query_out, task, logger, subtask="requesting trace")
                 else:
-                    if 'application/json' in res.headers.get('content-type', ''):
-                        e_message = res.json()['exceptions'][0]
-                    else:
-                        e_message = res.text
-                    query_out.set_failed(f'Error in the backend when extracting the jobdir during the'
-                                         f' execution of the task {task.strip("/")} during get_progress_run',
-                                         message='connection status code: ' + str(res.status_code),
-                                         e_message=e_message,
-                                         job_status='failed')
-                    logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
-                                 f'error: \n{e_message}')
-            # else:
-            #     if 'application/json' in res.headers.get('content-type', ''):
-            #         e_message = res.json()['exceptions'][0]
-            #     else:
-            #         e_message = res.text
-            #     query_out.set_failed(f'Error in the backend when extracting the jobdir during the'
-            #                          f' execution of the task {task.strip("/")} during get_progress_run',
-            #                          message='connection status code: ' + str(res.status_code),
-            #                          e_message=e_message,
-            #                          job_status='failed')
-            #     logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
-            #                  f'error: \n{e_message}')
+                    self._handle_backend_error(res, query_out, task, logger, subtask="extracting the jobdir from the option response")
         else:
-            if 'application/json' in res.headers.get('content-type', ''):
-                e_message = res.json()['exceptions'][0]
-            else:
-                e_message = res.text
-            query_out.set_failed(f'Error in the backend when executing task {task.strip("/")} '
-                                 'during get_progress_run',
-                                 message='connection status code: ' + str(res.status_code),
-                                 e_message=e_message,
-                                 job_status='failed')
-            logger.error(f'Error in the backend, connection status code: {str(res.status_code)}. '
-                         f'error: \n{e_message}')
+            self._handle_backend_error(res, query_out, task, logger, subtask="calling the option endpoint")
 
         return res_trace_dict, query_out
+
+    def _handle_backend_error(self, res, query_out, task, logger, subtask=None):
+        if 'application/json' in res.headers.get('content-type', ''):
+            e_message = res.json().get('exceptions', [res.text])[0]
+        else:
+            e_message = res.text
+        message = f'Error in the backend, task {task.strip("/")}'
+        if subtask is not None:
+            message += f', when {subtask}, '
+        message += 'during get_progress_run'
+        query_out.set_failed(message,
+                             message='connection status code: ' + str(res.status_code),
+                             e_message=e_message,
+                             job_status='failed')
+        if logger:
+            logger_message = f'Error in the backend, task {task.strip("/")}'
+            if subtask is not None:
+                logger_message += f', when {subtask}, '
+            logger_message += f'during get_progress_run, connection status code: {str(res.status_code)}. Error: \n{e_message}'
+            logger.error(logger_message)
 
     def run_query(self,
                   call_back_url = None,
