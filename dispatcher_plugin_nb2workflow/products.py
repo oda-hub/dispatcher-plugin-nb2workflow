@@ -325,7 +325,7 @@ class NB2WLightCurveProduct(NB2WProduct):
                  extra_metadata={}):
         super().__init__(encoded_data, 
                          data_product_type=LightCurveProduct, 
-                         out_dir='./', 
+                         out_dir=out_dir,
                          name=name, 
                          extra_metadata=extra_metadata)
         
