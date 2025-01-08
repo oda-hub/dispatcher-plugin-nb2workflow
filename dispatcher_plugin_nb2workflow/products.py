@@ -355,14 +355,14 @@ class NB2WLightCurveProduct(NB2WProduct):
         x_units = getattr(units, time_col, None)
         x_label = f"{time_col}, {x_units}" if x_units else time_col
         y_units = getattr(units, data_col, None)
-        y_label = f"{data_col}, {y_units}" if y_units else data_col 
-        
-        im_dic = self.dispatcher_data_prod.get_html_draw(x = data[time_col],
-                                                         y=data[data_col], 
+        y_label = f"{data_col}, {y_units}" if y_units else data_col
+
+        im_dic = self.dispatcher_data_prod.get_html_draw(x=data[time_col],
+                                                         y=data[data_col],
                                                          dy=data[err_col] if err_col else None,
                                                          dx=data[xerr_col] if xerr_col else None,
-                                                         x_label = x_label,
-                                                         y_label = y_label
+                                                         x_label=x_label,
+                                                         y_label=y_label
                                                          )
         return im_dic
    
