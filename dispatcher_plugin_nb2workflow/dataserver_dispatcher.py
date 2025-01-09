@@ -208,16 +208,13 @@ class NB2WDataDispatcher:
         if res.status_code == 200:
             resroot = res.json()['data'] if run_asynch else res.json()
             
-            except_message = None
-            if resroot['exceptions']: 
+            if resroot['exceptions']:
                 if isinstance(resroot['exceptions'][0], dict): # in async
                     except_message = resroot['exceptions'][0]['ename']+': '+res.json()['data']['exceptions'][0]['evalue']
                 else:
                     except_message = res.json()['exceptions'][0]
-                                                            
-                query_out.set_failed('Backend exception', 
-                                    message='Backend failed. ' + except_message,
-                                    job_status='failed')
+
+                logger.error('Backend exception during the notebook execution: ' + except_message)
                 return res, query_out
 
             comment_name = self.get_backend_comment(task.strip('/'))
