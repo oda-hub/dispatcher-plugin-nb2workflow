@@ -216,8 +216,8 @@ class NB2WDataDispatcher:
                 if resroot['exceptions'][0]['ename'] == 'AnalysisError':
                     query_out.set_status(1, message='Error in the backend', debug_message=except_message, job_status='failed')
                 else:
-                    query_out.set_failed('Analysis error',
-                                     message='Analysis error. ' + except_message,
+                    query_out.set_failed('Backend failed',
+                                     message='Backend failed. ' + except_message,
                                      job_status='failed')
 
                 return res, query_out
