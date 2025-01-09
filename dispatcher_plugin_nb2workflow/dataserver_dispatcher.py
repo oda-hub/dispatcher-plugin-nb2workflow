@@ -183,7 +183,6 @@ class NB2WDataDispatcher:
                   task = None,
                   param_dict = None):
         
-        res = None
         message = ''
         debug_message = ''
         query_out = QueryOutput()
@@ -214,7 +213,13 @@ class NB2WDataDispatcher:
                 else:
                     except_message = res.json()['exceptions'][0]
 
-                logger.error('Backend exception during the notebook execution: ' + except_message)
+                if resroot['exceptions'][0]['ename'] == 'AnalysisError':
+                    query_out.set_status(1, message='Error in the backend', debug_message=except_message, job_status='failed')
+                else:
+                    query_out.set_failed('Analysis error',
+                                     message='Analysis error. ' + except_message,
+                                     job_status='failed')
+
                 return res, query_out
 
             comment_name = self.get_backend_comment(task.strip('/'))
