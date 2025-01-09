@@ -329,23 +329,40 @@ class NB2WLightCurveProduct(NB2WProduct):
                          name=name, 
                          extra_metadata=extra_metadata)
         
-    def get_html_draw(self):
-        unit_ID=1 # TODO: it could be optional
-        du = self.dispatcher_data_prod.data.data_unit[unit_ID]
+    def get_html_draw(self, unit_id=None):
+        if unit_id is None:
+            unit_id=1
+        du = self.dispatcher_data_prod.data.data_unit[unit_id]
         data, header, units = du.data, du.header, du.units_dict
-        data_col = data.dtype.names[1]
+
+        time_col = None
+        data_col = None
         err_col = None
-        if len(data.dtype.names) == 3 and data.dtype.names[2].startswith('ERR'):
-            err_col = data.dtype.names[2]
-        x_label = f"TIME, {units['TIME']}" if units is not None and 'TIME' in units else 'TIME'
+        xerr_col = None
+        for i, name in enumerate(data.dtype.names):
+            if name.startswith('FLUX') or name.startswith('RATE') or name.startswith('COUNTS'):
+                data_col = name
+            elif name.startswith('ERR'):
+                err_col = name
+            elif name.startswith('XAX_E') or name.startswith('TIMEDEL'):
+                xerr_col = name
+            elif name == 'TIME':
+                time_col = name
+
+        if time_col is None or data_col is None:
+            raise ValueError(f"Time and data columns not found in {data.dtype.names}")
+
+        x_units = getattr(units, time_col, None)
+        x_label = f"{time_col}, {x_units}" if x_units else time_col
         y_units = getattr(units, data_col, None)
-        y_label = f"{data_col}, {y_units}" if y_units else data_col 
-        
-        im_dic = self.dispatcher_data_prod.get_html_draw(x = data['TIME'], 
-                                                         y=data[data_col], 
+        y_label = f"{data_col}, {y_units}" if y_units else data_col
+
+        im_dic = self.dispatcher_data_prod.get_html_draw(x=data[time_col],
+                                                         y=data[data_col],
                                                          dy=data[err_col] if err_col else None,
-                                                         x_label = x_label,
-                                                         y_label = y_label
+                                                         dx=data[xerr_col] if xerr_col else None,
+                                                         x_label=x_label,
+                                                         y_label=y_label
                                                          )
         return im_dic
    
