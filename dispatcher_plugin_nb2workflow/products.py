@@ -6,6 +6,7 @@ import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
+from cdci_data_analysis.analysis.exceptions import ProductProcessingError
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
 
 from .util import AstropyTableViewParser, with_hashable_dict
@@ -48,7 +49,7 @@ class NB2WProduct:
         if name is not None:
             error_msg += f" with name \"{name}\""
         error_msg += " has been wrongly annotated."
-        raise Exception(error_msg)
+        raise ProductProcessingError(error_msg)
 
     def write(self):
         file_path = self.dispatcher_data_prod.file_path
