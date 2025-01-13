@@ -43,7 +43,6 @@ class NB2WProduct:
     type_key = 'oda:DataProduct'
 
     def __init__(self, *args, **kwargs):
-        print(f"inside NB2WProduct __init__ {args}\n {kwargs}")
         error_msg = "The output"
         name = kwargs.get('name', None)
         if name is not None:
@@ -154,6 +153,15 @@ class NB2WProduct:
                 pass
         return encoded_data
 
+
+class _CommentProduct(NB2WProduct):
+    type_key = 'http://odahub.io/ontology#WorkflowResultComment'
+
+    def __init__(self, *args, **kwargs): ...
+
+    @classmethod
+    def _init_as_list(cls, encoded_data, *args, **kwargs):
+        return []
 
 class NB2WNumpyDataProduct(NB2WProduct):
     type_key = 'oda:NumpyData'
