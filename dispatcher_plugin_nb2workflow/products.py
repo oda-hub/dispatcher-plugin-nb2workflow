@@ -8,7 +8,6 @@ from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryPro
 from cdci_data_analysis.analysis.parameters import Parameter
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
 
-from build.lib.dispatcher_plugin_nb2workflow.products import NB2WProduct
 from .util import AstropyTableViewParser, with_hashable_dict
 from oda_api.ontology_helper import Ontology
 from io import StringIO
