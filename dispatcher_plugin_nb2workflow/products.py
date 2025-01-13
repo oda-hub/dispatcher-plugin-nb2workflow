@@ -7,6 +7,8 @@ import json
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
 from cdci_data_analysis.analysis.parameters import Parameter
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
+
+from build.lib.dispatcher_plugin_nb2workflow.products import NB2WProduct
 from .util import AstropyTableViewParser, with_hashable_dict
 from oda_api.ontology_helper import Ontology
 from io import StringIO
@@ -35,7 +37,28 @@ class TableProduct(BaseQueryProduct):
             file_path = self.file_path.path
             
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
-        
+
+
+class NB2WNumpyDataProduct(NB2WProduct):
+    type_key = 'oda:NumpyDataProduct'
+
+    def __init__(self,
+                 encoded_data,
+                 data_product_type=BaseQueryProduct,
+                 out_dir='./',
+                 name='nb2w',
+                 extra_metadata={}):
+
+        numpy_data_prod = NumpyDataProduct.decode(encoded_data)
+        if not numpy_data_prod.name:
+            numpy_data_prod.name = self.name
+
+        super().__init__(encoded_data=numpy_data_prod,
+                         data_product_type=data_product_type,
+                         out_dir=out_dir,
+                         name=name,
+                         extra_metadata=extra_metadata)
+
 
 class NB2WProduct:
     
@@ -48,20 +71,14 @@ class NB2WProduct:
                  name='nb2w', 
                  extra_metadata={}):
 
-        # this constructor is only valid for NumpyDataProduct-based products
-        
         self.name = name
         self.extra_metadata = extra_metadata 
         metadata = encoded_data.get('meta_data', {})
         self.out_dir = out_dir
-        numpy_data_prod = NumpyDataProduct.decode(encoded_data) 
-        
-        if not numpy_data_prod.name:
-            numpy_data_prod.name = self.name
 
         self.dispatcher_data_prod = data_product_type(
             name=self.name, 
-            data=numpy_data_prod,
+            data=encoded_data,
             meta_data=metadata,
             file_dir=out_dir,
             file_name = f"{self.name}.fits")
