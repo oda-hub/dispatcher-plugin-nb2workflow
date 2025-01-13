@@ -38,6 +38,34 @@
         },
         "parameters": {}
     },
+    "data_product": {
+        "output": {
+            "result": {
+                "comment": " http://odahub.io/ontology#DataProduct",
+                "name": "result",
+                "owl_type": "http://odahub.io/ontology#DataProduct",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": ""
+            }
+        },
+        "parameters": {}
+    },
+    "data_product_no_annotations": {
+        "output": {
+            "result": {
+                "comment": "",
+                "name": "result",
+                "owl_type": "",
+                "python_type": {
+                    "type_object": "<class 'str'>"
+                },
+                "value": ""
+            }
+        },
+        "parameters": {}
+    },
     "image": {
         "output": {
             "result": {

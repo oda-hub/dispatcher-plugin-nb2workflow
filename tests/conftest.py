@@ -119,6 +119,8 @@ def mock_backend(httpserver):
         bin_json = json.loads(fd.read())
     with open(os.path.join(responses_path, 'image.json'), 'r') as fd:
         image_json = json.loads(fd.read())
+    with open(os.path.join(responses_path, 'data_product.json'), 'r') as fd:
+        data_product_json = json.loads(fd.read())
     # with open(os.path.join(responses_path, 'test_output.html'), 'r') as fd:
     #     test_output_html = fd.read()
         
@@ -128,6 +130,8 @@ def mock_backend(httpserver):
     httpserver.expect_request(f'/api/v1.0/get/table').respond_with_json(table_json)
     httpserver.expect_request(f'/api/v1.0/get/ascii_binary').respond_with_json(bin_json)
     httpserver.expect_request(f'/api/v1.0/get/image').respond_with_json(image_json)
+    httpserver.expect_request(f'/api/v1.0/get/data_product').respond_with_json(data_product_json)
+    httpserver.expect_request(f'/api/v1.0/get/data_product_no_annotations').respond_with_json(data_product_json)
     # httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_data(test_output_html)
     httpserver.expect_request(f'/trace/nb2w-ylp5ovnm/lightcurve').respond_with_handler(trace_get_func_handler)
     httpserver.expect_request(f'/api/v1.0/get/dummy_echo').respond_with_handler(return_request_query_dict)
