@@ -40,7 +40,7 @@ class TableProduct(BaseQueryProduct):
 
 class NB2WProduct:
     
-    type_key = 'oda:DataProduct'
+    type_key = 'http://odahub.io/ontology#DataProduct'
 
     def __init__(self, *args, **kwargs):
         error_msg = "The output"
@@ -164,7 +164,7 @@ class _CommentProduct(NB2WProduct):
         return []
 
 class NB2WNumpyDataProduct(NB2WProduct):
-    type_key = 'oda:NumpyData'
+    type_key = 'http://odahub.io/ontology#NumpyData'
 
     def __init__(self,
                  encoded_data,
@@ -190,7 +190,7 @@ class NB2WNumpyDataProduct(NB2WProduct):
 
 
 class NB2WParameterProduct(NB2WProduct):
-    type_key = 'oda:WorkflowParameter'
+    type_key = 'http://odahub.io/ontology#WorkflowParameter'
     
     ontology_path = None
         
