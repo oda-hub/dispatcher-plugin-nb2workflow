@@ -289,6 +289,26 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
 
+@pytest.mark.parametrize("product_type", ["data_product", "data_product_no_annotations"])
+def test_data_product_product(dispatcher_live_fixture, mock_backend, product_type):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': product_type,
+                              'api': 'True',
+                              'run_asynch': 'False'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert jdata['query_status'] == 'failed'
+    assert jdata['job_status'] == 'failed'
+
 def test_get_config_dict_from_kg():
     from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
     
