@@ -38,27 +38,6 @@ class TableProduct(BaseQueryProduct):
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
 
 
-class NB2WNumpyDataProduct(NB2WProduct):
-    type_key = 'oda:NumpyDataProduct'
-
-    def __init__(self,
-                 encoded_data,
-                 data_product_type=BaseQueryProduct,
-                 out_dir='./',
-                 name='nb2w',
-                 extra_metadata={}):
-
-        numpy_data_prod = NumpyDataProduct.decode(encoded_data)
-        if not numpy_data_prod.name:
-            numpy_data_prod.name = self.name
-
-        super().__init__(encoded_data=numpy_data_prod,
-                         data_product_type=data_product_type,
-                         out_dir=out_dir,
-                         name=name,
-                         extra_metadata=extra_metadata)
-
-
 class NB2WProduct:
     
     type_key = 'oda:DataProduct'
@@ -184,6 +163,28 @@ class NB2WProduct:
             except json.decoder.JSONDecodeError:
                 pass
         return encoded_data
+
+
+class NB2WNumpyDataProduct(NB2WProduct):
+    type_key = 'oda:NumpyDataProduct'
+
+    def __init__(self,
+                 encoded_data,
+                 data_product_type=BaseQueryProduct,
+                 out_dir='./',
+                 name='nb2w',
+                 extra_metadata={}):
+
+        numpy_data_prod = NumpyDataProduct.decode(encoded_data)
+        if not numpy_data_prod.name:
+            numpy_data_prod.name = self.name
+
+        super().__init__(encoded_data=numpy_data_prod,
+                         data_product_type=data_product_type,
+                         out_dir=out_dir,
+                         name=name,
+                         extra_metadata=extra_metadata)
+
 
 class NB2WParameterProduct(NB2WProduct):
     type_key = 'oda:WorkflowParameter'
