@@ -173,7 +173,6 @@ class NB2WProductQuery(ProductQuery):
             extra_meta = {}
             prod_uris = {}
             for product in prod_list.prod_list:
-                print(f"product: {product}")
                 if isinstance(product, NB2WAstropyTableProduct):
                     tab_dp_list.append(product.dispatcher_data_prod.table_data)
                 elif isinstance(product, NB2WBinaryProduct):
