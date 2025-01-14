@@ -310,6 +310,8 @@ def test_data_product_product(dispatcher_live_fixture, mock_backend, product_typ
     assert c.status_code == 200
     assert jdata['query_status'] == 'failed'
     assert jdata['job_status'] == 'failed'
+    assert jdata['exit_status']['error_message'] == 'The output with name "result" has been wrongly annotated.'
+    assert jdata['exit_status']['message'] == 'Error during the products post processing'
 
 def test_get_config_dict_from_kg():
     from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
