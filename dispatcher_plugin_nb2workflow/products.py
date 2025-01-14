@@ -163,7 +163,7 @@ class _CommentProduct(NB2WProduct):
         return []
 
 class NB2WNumpyDataProduct(NB2WProduct):
-    type_key = 'http://odahub.io/ontology#NumpyData'
+    type_key = 'http://odahub.io/ontology#NumpyDataProduct'
 
     def __init__(self,
                  encoded_data,
