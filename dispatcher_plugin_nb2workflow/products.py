@@ -273,7 +273,7 @@ class NB2WTextProduct(NB2WProduct):
 
 
 class NB2WProgressProduct(NB2WProduct):
-
+    type_key = 'http://odahub.io/ontology#ProgressProduct'
     def __init__(self, progress_html_data, out_dir=None, name='progress'):
         self.out_dir = out_dir
         self.name = name
