@@ -41,8 +41,6 @@ class TableProduct(BaseQueryProduct):
 
 class NB2WProduct:
     
-    type_key = 'http://odahub.io/ontology#DataProduct'
-
     def __init__(self, *args, **kwargs):
         error_msg = "The output"
         name = kwargs.get('name', None)
@@ -273,7 +271,6 @@ class NB2WTextProduct(NB2WProduct):
 
 
 class NB2WProgressProduct(NB2WProduct):
-    type_key = 'http://odahub.io/ontology#ProgressProduct'
     def __init__(self, progress_html_data, out_dir=None, name='progress'):
         self.out_dir = out_dir
         self.name = name
