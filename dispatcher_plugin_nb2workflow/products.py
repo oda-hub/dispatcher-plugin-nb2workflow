@@ -5,8 +5,10 @@ import os
 import json
 
 from cdci_data_analysis.analysis.products import LightCurveProduct, BaseQueryProduct, ImageProduct, SpectrumProduct
-from cdci_data_analysis.analysis.parameters import Parameter
+from cdci_data_analysis.analysis.parameters import Parameter, subclasses_recursive
+from cdci_data_analysis.analysis.exceptions import ProductProcessingError
 from oda_api.data_products import NumpyDataProduct, ODAAstropyTable, BinaryProduct, PictureProduct
+
 from .util import AstropyTableViewParser, with_hashable_dict
 from oda_api.ontology_helper import Ontology
 from io import StringIO
@@ -35,34 +37,18 @@ class TableProduct(BaseQueryProduct):
             file_path = self.file_path.path
             
         self.table_data.write(file_path, overwrite=overwrite, format='ascii.ecsv')
-        
+
+
 class NB2WProduct:
-    def __init__(self, 
-                 encoded_data, 
-                 data_product_type=BaseQueryProduct,
-                 out_dir='./', 
-                 name='nb2w', 
-                 extra_metadata={}):
-
-        # this constructor is only valid for NumpyDataProduct-based products
-        
-        self.name = name
-        self.extra_metadata = extra_metadata 
-        metadata = encoded_data.get('meta_data', {})
-        self.out_dir = out_dir
-        numpy_data_prod = NumpyDataProduct.decode(encoded_data) 
-        
-        if not numpy_data_prod.name:
-            numpy_data_prod.name = self.name
-
-        self.dispatcher_data_prod = data_product_type(
-            name=self.name, 
-            data=numpy_data_prod,
-            meta_data=metadata,
-            file_dir=out_dir,
-            file_name = f"{self.name}.fits")
     
-    
+    def __init__(self, *args, **kwargs):
+        error_msg = "The output"
+        name = kwargs.get('name', None)
+        if name is not None:
+            error_msg += f" with name \"{name}\""
+        error_msg += " has been wrongly annotated."
+        raise ProductProcessingError(error_msg)
+
     def write(self):
         file_path = self.dispatcher_data_prod.file_path
         self.dispatcher_data_prod.write()
@@ -74,10 +60,10 @@ class NB2WProduct:
     @classmethod 
     def _init_as_list(cls, encoded_data, *args, **kwargs):
         encoded_data = cls._dejsonify(encoded_data)
-        
+
         if isinstance(encoded_data, list):
             return [cls(elem, *args, **kwargs) for elem in encoded_data]
-        
+
         return [cls(encoded_data, *args, **kwargs)]
 
     @classmethod
@@ -96,7 +82,7 @@ class NB2WProduct:
             onto = None
             par_prod_class_dict = {}
 
-        mapping = {getattr(x, 'type_key'): x for x in cls.__subclasses__() if hasattr(x, 'type_key')}
+        mapping = {getattr(x, 'type_key'): x for x in subclasses_recursive(cls) if hasattr(x, 'type_key')}
         mapping.update(par_prod_class_dict)
 
         prod_classes_dict = {}
@@ -135,7 +121,7 @@ class NB2WProduct:
                     extra_kw.update({'extra_metadata': extra_metadata})
 
             prod_classes_dict[key] = (mapping.get(cls_owl_type, cls), name, extra_kw)
-        
+
         return prod_classes_dict
 
 
@@ -152,7 +138,8 @@ class NB2WProduct:
                                                       name=val[1],
                                                       **val[2]))
             except Exception as e:
-                logger.error('unable to construct %s product: %s from this: %s ', key, e, output[key])
+                logger.error('unable to construct %s product: %s from %s', key, e, val[0])
+                raise
 
         return prod_list
 
@@ -165,8 +152,44 @@ class NB2WProduct:
                 pass
         return encoded_data
 
+
+class _CommentProduct(NB2WProduct):
+    type_key = 'http://odahub.io/ontology#WorkflowResultComment'
+
+    def __init__(self, *args, **kwargs): ...
+
+    @classmethod
+    def _init_as_list(cls, encoded_data, *args, **kwargs):
+        return []
+
+class NB2WNumpyDataProduct(NB2WProduct):
+    type_key = 'http://odahub.io/ontology#NumpyDataProduct'
+
+    def __init__(self,
+                 encoded_data,
+                 data_product_type=BaseQueryProduct,
+                 out_dir='./',
+                 name='nb2w',
+                 extra_metadata={}):
+
+        self.name = name
+        self.extra_metadata = extra_metadata
+        metadata = encoded_data.get('meta_data', {})
+        self.out_dir = out_dir
+        numpy_data_prod = NumpyDataProduct.decode(encoded_data)
+        if not numpy_data_prod.name:
+            numpy_data_prod.name = self.name
+
+        self.dispatcher_data_prod = data_product_type(
+            name=self.name,
+            data=numpy_data_prod,
+            meta_data=metadata,
+            file_dir=out_dir,
+            file_name=f"{self.name}.fits")
+
+
 class NB2WParameterProduct(NB2WProduct):
-    type_key = 'oda:WorkflowParameter'
+    type_key = 'http://odahub.io/ontology#WorkflowParameter'
     
     ontology_path = None
         
@@ -248,7 +271,6 @@ class NB2WTextProduct(NB2WProduct):
 
 
 class NB2WProgressProduct(NB2WProduct):
-
     def __init__(self, progress_html_data, out_dir=None, name='progress'):
         self.out_dir = out_dir
         self.name = name
@@ -315,7 +337,7 @@ class NB2WAstropyTableProduct(NB2WProduct):
         return {'image': {'div': '<br><br>'+parser.tabcode,
                           'script': f"<script>{script_text}</script>"} }
         
-class NB2WLightCurveProduct(NB2WProduct): 
+class NB2WLightCurveProduct(NB2WNumpyDataProduct):
     type_key = 'http://odahub.io/ontology#LightCurve'
         
     def __init__(self, 
@@ -366,7 +388,7 @@ class NB2WLightCurveProduct(NB2WProduct):
                                                          )
         return im_dic
    
-class NB2WSpectrumProduct(NB2WProduct):
+class NB2WSpectrumProduct(NB2WNumpyDataProduct):
     type_key = 'http://odahub.io/ontology#Spectrum'
     
     def __init__(self, 
@@ -379,7 +401,7 @@ class NB2WSpectrumProduct(NB2WProduct):
                          out_dir=out_dir, name=name, 
                          extra_metadata=extra_metadata)
         
-class NB2WImageProduct(NB2WProduct):
+class NB2WImageProduct(NB2WNumpyDataProduct):
     type_key = 'http://odahub.io/ontology#Image'
     
     def __init__(self, 
@@ -387,7 +409,8 @@ class NB2WImageProduct(NB2WProduct):
                  out_dir='./', 
                  name='image', 
                  extra_metadata={}):
-        super().__init__(encoded_data, 
+
+        super().__init__(encoded_data,
                          data_product_type=ImageProduct, 
                          out_dir=out_dir, 
                          name=name, 

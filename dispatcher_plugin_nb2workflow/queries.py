@@ -6,7 +6,9 @@ from .products import (NB2WProduct,
                        NB2WPictureProduct,
                        NB2WTextProduct,
                        NB2WParameterProduct,
-                       NB2WProgressProduct)
+                       NB2WProgressProduct,
+                       NB2WNumpyDataProduct,
+                       NB2WImageProduct)
 from oda_api.ontology_helper import Ontology
 import os
 from functools import lru_cache
@@ -186,7 +188,7 @@ class NB2WProductQuery(ProductQuery):
                 elif isinstance(product, NB2WProgressProduct):
                     progress_dp_list.append({'name': product.name,
                                              'value': product.progress_data})
-                else: # NB2WProduct contains NumpyDataProd by default
+                else:
                     np_dp_list.append(product.dispatcher_data_prod.data)
                 
                 extra_meta[product.name] = getattr(product, 'extra_metadata', {})

@@ -151,6 +151,8 @@ def test_instrument_products(dispatcher_live_fixture, mock_backend):
         if isinstance(elem, dict) and 'prod_dict' in elem.keys():
             prod_dict = elem['prod_dict']
     assert prod_dict == {'ascii_binary': 'ascii_binary_query',
+                         'data_product': 'data_product_query',
+                         'data_product_no_annotations': 'data_product_no_annotations_query',
                          'dummy_echo': 'dummy_echo_query',
                          'image': 'image_query',
                          'file_download': 'file_download_query',
@@ -288,6 +290,28 @@ def test_image_product(dispatcher_live_fixture, mock_backend):
     assert c.status_code == 200
     imdata = jdata['products']['numpy_data_product_list'][0]
     oda_ndp = ImageDataProduct.decode(imdata)
+
+@pytest.mark.parametrize("product_type", ["data_product", "data_product_no_annotations"])
+def test_data_product_product(dispatcher_live_fixture, mock_backend, product_type):
+    server = dispatcher_live_fixture
+    logger.info("constructed server: %s", server)
+
+    c = requests.get(server + "/run_analysis",
+                    params = {'instrument': 'example0',
+                              'query_status': 'new',
+                              'query_type': 'Real',
+                              'product_type': product_type,
+                              'api': 'True',
+                              'run_asynch': 'False'})
+    logger.info("content: %s", c.text)
+    jdata = c.json()
+    logger.info(json.dumps(jdata, indent=4, sort_keys=True))
+    logger.info(jdata)
+    assert c.status_code == 200
+    assert jdata['query_status'] == 'failed'
+    assert jdata['job_status'] == 'failed'
+    assert jdata['exit_status']['error_message'] == 'The output with name "result" has been wrongly annotated.'
+    assert jdata['exit_status']['message'] == 'Error during the products post processing'
 
 def test_get_config_dict_from_kg():
     from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
