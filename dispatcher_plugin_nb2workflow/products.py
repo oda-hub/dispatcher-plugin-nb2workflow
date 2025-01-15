@@ -420,7 +420,7 @@ class NB2WImageProduct(NB2WNumpyDataProduct):
         # If there is only one extension of the fits file, it is a primary, and therefore it is the only one suitable to be an image.
         # The other option is specific to INTEGRAL products, where we want to display the significance map among other extensions.
         # Note that if criteria are not met, it will end up with taking the last extension.
-        # It is an improvement on the current situation, but should we add new instruments, we might need to introduce adaptations.
+        # In the case a new instrument is added, a further adaptation might be needed.
         data_id = 0
         if len(self.dispatcher_data_prod.data.data_unit) == 1:
             data_id = 0
