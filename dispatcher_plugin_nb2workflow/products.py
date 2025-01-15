@@ -417,13 +417,17 @@ class NB2WImageProduct(NB2WNumpyDataProduct):
                          extra_metadata=extra_metadata)
 
     def get_html_draw(self):
-
+        # If there is only one extension of the fits file, it is a primary, and therefore it is the only one suitable to be an image.
+        # The other option is specific to INTEGRAL products, where we want to display the significance map among other extensions.
+        # Note that if criteria are not met, it will end up with taking the last extension.
+        # It is an improvement on the current situation, but should we add new instruments, we might need to introduce adaptations.
+        data_id = 0
         if len(self.dispatcher_data_prod.data.data_unit) == 1:
             data_id = 0
         else:
-            for id, unit in enumerate(self.dispatcher_data_prod.data.data_unit):
+            for unit_id, unit in enumerate(self.dispatcher_data_prod.data.data_unit):
                 if unit.header.get('IMATYPE', '') == 'SIGNIFICANCE' and unit.header.get('XTENSION', '') == 'IMAGE':
-                    data_id = id
+                    data_id = unit_id
                     break
 
         return self.dispatcher_data_prod.get_html_draw(data_ID=data_id)  # type: ignore
