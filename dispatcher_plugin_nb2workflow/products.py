@@ -417,4 +417,13 @@ class NB2WImageProduct(NB2WNumpyDataProduct):
                          extra_metadata=extra_metadata)
 
     def get_html_draw(self):
-        return self.dispatcher_data_prod.get_html_draw()  # type: ignore
+
+        if len(self.dispatcher_data_prod.data.data_unit) == 1:
+            data_id = 0
+        else:
+            for id, unit in enumerate(self.dispatcher_data_prod.data.data_unit):
+                if unit.header.get('IMATYPE', '') == 'SIGNIFICANCE' and unit.header.get('XTENSION', '') == 'IMAGE':
+                    data_id = id
+                    break
+
+        return self.dispatcher_data_prod.get_html_draw(data_ID=data_id)  # type: ignore
