@@ -422,9 +422,7 @@ class NB2WImageProduct(NB2WNumpyDataProduct):
         # Note that if criteria are not met, it will end up with taking the last extension.
         # In the case a new instrument is added, a further adaptation might be needed.
         data_id = 0
-        if len(self.dispatcher_data_prod.data.data_unit) == 1:
-            data_id = 0
-        else:
+        if len(self.dispatcher_data_prod.data.data_unit) >= 1:
             for unit_id, unit in enumerate(self.dispatcher_data_prod.data.data_unit):
                 if unit.header.get('IMATYPE', '') == 'SIGNIFICANCE' and unit.header.get('XTENSION', '') == 'IMAGE':
                     data_id = unit_id
