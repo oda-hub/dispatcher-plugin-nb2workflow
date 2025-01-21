@@ -400,10 +400,67 @@ class NB2WSpectrumProduct(NB2WNumpyDataProduct):
                          data_product_type=SpectrumProduct, 
                          out_dir=out_dir, name=name, 
                          extra_metadata=extra_metadata)
+    
+    def set_rmf_dp(self, in_rmf_dp):
+        # We need the RMF data product for plotting
+        # it should be a Numpy Data Product
+        self.rmf_dp = in_rmf_dp
 
-    def get_html_draw(self):
+    def get_html_draw(self, unit_id=None, x_range=None, y_range=None, ):
+        
+        if not hasattr(self, 'rmf_dp'):
+            # without response matrix, we do not have an energy scale
+            # therefore it is impossible to plot
+            #TODO Check if None is acceptable
+            return None
+        
+        if unit_id is None:
+            unit_id=1
+        du = self.dispatcher_data_prod.data.data_unit[unit_id]
+        data, header, units = du.data, du.header, du.units_dict
+        
+        data_col = None        
+        err_col = None
+        for i, name in enumerate(data.dtype.names):
+            if name.startswith('FLUX') or name.startswith('RATE') or name.startswith('COUNTS'):
+                data_col = name
+            elif name.endswith('STAT_ERR'):
+                err_col = name
+
+        if data_col is None:
+            raise ValueError(f"Time and data columns not found in {data.dtype.names}")
+        
+        x = None
+        dx = None
+        y = data[data_col]
+        dy = data[err_col] if err_col else None
+        
+        for du in self.rmf_dp.data.data_unit[1:]:
+            data2, header, units = du.data, du.header, du.units_dict
+            if header['EXTNAME'] == 'EBOUNDS':
+                x = (data2['E_MAX'] + data2['E_MIN'])/2.
+                dx = (data2['E_MAX'] - data2['E_MIN']) / 2.
+        
+        if x_range is None:
+            x_range = [x.min(), x.max()]
+        
+        if y_range is None:
+            y_range = [numpy.max([1e-4, (y-dy)[x < x_range[1]].min()]), (y+dy).max()]
+
+        y /= dx
+        dy /= dx
+        
         # like this, it calls the dispatcher_data_prod.get_html_draw() method of the SpectrumProduct class, which currently does not exist
-        return self.dispatcher_data_prod.get_html_draw()
+        return self.dispatcher_data_prod.get_html_draw(x=x
+                                                         y=y,
+                                                         dy=dy,
+                                                         dx=dx,
+                                                         x_label='Energy',
+                                                         y_label='Counts/s/keV',
+                                                         x_axis_type='log',
+                                                         y_axis_type='log',
+                                                         x_range=x_range,
+                                                         y_range=y_range)
         
 class NB2WImageProduct(NB2WNumpyDataProduct):
     type_key = 'http://odahub.io/ontology#Image'
