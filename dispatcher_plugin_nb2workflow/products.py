@@ -400,6 +400,10 @@ class NB2WSpectrumProduct(NB2WNumpyDataProduct):
                          data_product_type=SpectrumProduct, 
                          out_dir=out_dir, name=name, 
                          extra_metadata=extra_metadata)
+
+    def get_html_draw(self):
+        # like this, it calls the dispatcher_data_prod.get_html_draw() method of the SpectrumProduct class, which currently does not exist
+        return self.dispatcher_data_prod.get_html_draw()
         
 class NB2WImageProduct(NB2WNumpyDataProduct):
     type_key = 'http://odahub.io/ontology#Image'
