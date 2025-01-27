@@ -210,15 +210,21 @@ class NB2WDataDispatcher:
             if resroot['exceptions']:
                 if isinstance(resroot['exceptions'][0], dict): # in async
                     except_message = resroot['exceptions'][0]['ename']+': '+res.json()['data']['exceptions'][0]['evalue']
+                    error_message = res.json()['data']['exceptions'][0]['evalue']
                 else:
                     except_message = res.json()['exceptions'][0]
+                    error_message = res.json()['exceptions'][0]
 
                 if resroot['exceptions'][0]['ename'] == 'AnalysisError':
-                    query_out.set_status(1, message='Error in the backend', debug_message=except_message, job_status='failed')
+                    query_out.set_status(1,
+                                         message='Error in the backend',
+                                         error_message=error_message,
+                                         debug_message=except_message,
+                                         job_status='failed')
                 else:
                     query_out.set_failed('Backend failed',
-                                     message='Backend failed. ' + except_message,
-                                     job_status='failed')
+                                         message='Backend failed. ' + except_message,
+                                         job_status='failed')
 
                 return res, query_out
 
