@@ -183,6 +183,7 @@ class NB2WDataDispatcher:
                   task = None,
                   param_dict = None):
         
+        res = None
         message = ''
         debug_message = ''
         query_out = QueryOutput()
@@ -207,19 +208,16 @@ class NB2WDataDispatcher:
         if res.status_code == 200:
             resroot = res.json()['data'] if run_asynch else res.json()
             
-            if resroot['exceptions']:
+            except_message = None
+            if resroot['exceptions']: 
                 if isinstance(resroot['exceptions'][0], dict): # in async
                     except_message = resroot['exceptions'][0]['ename']+': '+res.json()['data']['exceptions'][0]['evalue']
                 else:
                     except_message = res.json()['exceptions'][0]
-
-                if resroot['exceptions'][0]['ename'] == 'AnalysisError':
-                    query_out.set_status(1, message='Error in the backend', debug_message=except_message, job_status='failed')
-                else:
-                    query_out.set_failed('Backend failed',
-                                     message='Backend failed. ' + except_message,
-                                     job_status='failed')
-
+                                                            
+                query_out.set_failed('Backend exception', 
+                                    message='Backend failed. ' + except_message,
+                                    job_status='failed')
                 return res, query_out
 
             comment_name = self.get_backend_comment(task.strip('/'))
