@@ -128,7 +128,13 @@ class NB2WDataDispatcher:
             param_dict['_async_request'] = "yes"
 
         url = os.path.join(self.data_server_url, 'api/v1.0/get', task.strip('/'))
-        res = requests.get(url, params=param_dict)
+        payload = {}
+        for k, v in param_dict.items():
+            if v is None:
+                payload[k] = '\x00'
+            else:
+                payload[k] = v
+        res = requests.get(url, params=payload)
         if res.status_code in [200, 201]:
             res_data = res.json()
             workflow_status = res_data['workflow_status'] if run_asynch else 'done'
