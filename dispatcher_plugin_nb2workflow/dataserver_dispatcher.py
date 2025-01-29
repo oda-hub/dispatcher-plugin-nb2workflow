@@ -130,7 +130,7 @@ class NB2WDataDispatcher:
         url = os.path.join(self.data_server_url, 'api/v1.0/get', task.strip('/'))
         payload = {}
         for k, v in param_dict.items():
-            if v is None:
+            if v is None and k != '_token':
                 payload[k] = '\x00'
             else:
                 payload[k] = v
