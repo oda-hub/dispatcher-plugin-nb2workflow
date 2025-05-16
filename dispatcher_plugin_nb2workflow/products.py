@@ -267,7 +267,7 @@ class NB2WTextProduct(NB2WProduct):
         self.file_path = file_path
         
     def get_html_draw(self):
-        return {'image': {'div': f'<p style="white-space: pre-line;">{self.data_prod}</p>', 'script': ''} }
+        return {'image': {'div': f'<p style="white-space: pre-wrap;">{self.data_prod}</p>', 'script': ''} }
 
 
 class NB2WProgressProduct(NB2WProduct):
