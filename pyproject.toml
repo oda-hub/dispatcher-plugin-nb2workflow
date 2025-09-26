@@ -35,5 +35,6 @@ dev = [
     "pytest-httpserver",
     "pytest-xprocess",
     "nb2workflow[service,rdf]",
-    "cdci-data-analysis"
+    "cdci-data-analysis",
+    "coverage>=7.10.7",
 ]
