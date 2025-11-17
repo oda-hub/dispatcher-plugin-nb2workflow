@@ -25,7 +25,7 @@ dispatcher_plugin_nb2workflow = ["config_dir/*"]
 
 [tool.uv.sources]
 cdci-data-analysis = [
-    { git = "https://github.com/oda-hub/dispatcher-app.git", branch = "numpy-gt-2" },
+    { git = "https://github.com/oda-hub/dispatcher-app.git", branch = "numpy-gt-2", group = "dev" },
 ]
 
 [dependency-groups]

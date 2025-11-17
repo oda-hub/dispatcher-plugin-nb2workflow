@@ -1051,7 +1051,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cdci-data-analysis", git = "https://github.com/oda-hub/dispatcher-app.git?branch=numpy-gt-2" },
+    { name = "cdci-data-analysis" },
     { name = "python-magic" },
     { name = "rdflib" },
 ]
