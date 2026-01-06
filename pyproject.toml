@@ -1,3 +1,40 @@
+[project]
+name = "dispatcher-plugin-nb2workflow"
+version = "1.0.0"
+authors = [
+    {name = "Denys Savchenko", email="savchenko@apc.in2p3.fr"}
+]
+requires-python = ">= 3.10"
+license = "MIT"
+
+dependencies = [
+    "rdflib",
+    "python-magic",
+    "cdci-data-analysis"
+]
+
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["dispatcher_plugin_nb2workflow"]
+
+[tool.setuptools.package-data]
+dispatcher_plugin_nb2workflow = ["config_dir/*"]
+
+[tool.uv.sources]
+cdci-data-analysis = [
+    { git = "https://github.com/oda-hub/dispatcher-app.git", branch = "numpy-gt-2", group = "dev" },
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "psutil",
+    "pytest-httpserver",
+    "pytest-xprocess",
+    "nb2workflow[service,rdf]",
+    "cdci-data-analysis",
+    "coverage>=7.10.7",
+]
