@@ -16,15 +16,18 @@ from cdci_data_analysis.pytest_fixtures import (
 import pytest
 import json
 import os
-import signal
-from xprocess import ProcessStarter
 import requests
-from urllib.parse import urlparse, parse_qs
-from werkzeug.wrappers import Request
-from werkzeug.wrappers import Response
-from bs4 import BeautifulSoup
+import subprocess
+import sys
+import socket
+import shutil
+import hashlib
 
-from pytest_httpserver.httpserver import MappingQueryMatcher
+from pathlib import Path
+from xprocess import ProcessStarter
+from urllib.parse import urlparse, parse_qs
+from werkzeug.wrappers import Request, Response
+
 
 config_one_instrument = """   
 include_glued_output: True
@@ -176,39 +179,91 @@ def set_env_var_plugin_config_no_glued_output_file_path(conf_file_no_glued_outpu
 
 @pytest.fixture(scope="session")
 def live_nb2service(xprocess):
-    wd = os.getcwd()
+    venv_base_dir = Path(__file__).parent / ".webserver_venv_cache"
+    pyproject_dir = Path(__file__).parent / "webserver"
+    pyproject = pyproject_dir / "pyproject.toml"
+    lockfile = pyproject_dir / "uv.lock"
+    logfile = Path(__file__).parent / ".webserver.log"
+
+    def hash_inputs() -> str:
+        h = hashlib.sha256()
+        h.update(pyproject.read_bytes())
+        if lockfile.exists():
+            h.update(lockfile.read_bytes())
+        return h.hexdigest()[:16]
+
+    venv_path = venv_base_dir / hash_inputs()
+
+    def find_free_port() -> int:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("", 0))
+            return s.getsockname()[1]
+
+    def python_path() -> Path:
+        return venv_path / "bin" / "python"
+
+    def pip_path() -> Path:
+        return venv_path / "bin" / "pip"
+
+    def create_venv():
+        if venv_path.exists():
+            return  # cache hit
+
+        venv_path.parent.mkdir(exist_ok=True)
+
+        if shutil.which("uv"):
+            subprocess.run(["uv", "venv", str(venv_path)], check=True)
+            subprocess.run(
+                [
+                    "uv",
+                    "pip",
+                    "install",
+                    "--python",
+                    str(python_path()),
+                    str(pyproject_dir),
+                ],
+                check=True,
+            )
+        else:
+            subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+            subprocess.run(
+                [str(pip_path()), "install", "-e", str(pyproject_dir)],
+                check=True,
+            )
+
+    port = find_free_port()
+    url = f"http://127.0.0.1:{port}"
+
+    create_venv()
+
     class Starter(ProcessStarter):
-        pattern = "Serving Flask app"
-        timeout = 30
-        max_read_lines = 10000 
+        pattern = ".*"
+        timeout = 20
         terminate_on_interrupt = True
-        responses_path = os.path.join(os.path.dirname(__file__), 'example_nb')
-        args = ['nb2service', '--port', '9393', responses_path]
-        # args = ['nb2service', '--port', '9393', os.path.join(wd, 'tests', 'example_nb')]
+        responses_path = Path(__file__).parent / 'example_nb'
+        args = [
+            str(venv_path / "bin" / "nb2service"), 
+            "--port", 
+            str(port), 
+            str(responses_path)
+            ]
+
         def startup_check(self):
-            try: 
-                res = requests.get('http://localhost:9393/')
-            except requests.ConnectionError:
+            try:
+                r = requests.get(f"{url}/health", timeout=0.2)
+                return r.status_code == 200
+            except requests.RequestException:
                 return False
-            if res.status_code != 200:
-                return False
-            return res.json()['message'] == 'all is ok!'
-    try:
-        logfile = xprocess.ensure("nb2service", Starter)
 
-    except Exception as e:
-        process_info = xprocess.getinfo('nb2service')
-        pid = process_info.pid
-        kill_child_processes(pid, signal.SIGINT)
-        os.kill(pid, signal.SIGINT)
-        process_info.terminate()
-        raise e
-    yield 'http://localhost:9393/'
-    process_info = xprocess.getinfo('nb2service')
-    pid = process_info.pid
+    logfile.parent.mkdir(parents=True, exist_ok=True)
 
-    kill_child_processes(pid, signal.SIGINT)
-    os.kill(pid, signal.SIGINT)
+    xprocess.ensure(
+        "nb2service",
+        Starter,
+    )
 
-    process_info.terminate()
+    yield url
 
+    xprocess.getinfo("nb2service").terminate()
+    logfile.unlink(missing_ok=True)
+    # NOTE: cached venv is intentionally NOT deleted
