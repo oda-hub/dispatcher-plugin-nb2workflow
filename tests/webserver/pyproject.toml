@@ -12,4 +12,4 @@ dependencies = [
     "oda-api"
 ]
 
-oda-api = { git = "https://github.com/oda-hub/oda_api.git", branch = "puremagic-update-compat", group = "dev" }
+oda-api = { git = "https://github.com/oda-hub/oda_api.git", branch = "puremagic-update-compat"}
