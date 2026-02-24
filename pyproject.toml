@@ -9,7 +9,7 @@ license = "MIT"
 
 dependencies = [
     "rdflib",
-    "python-magic", # NOTE: consider using puremagic
+    "puremagic",
     "cdci-data-analysis"
 ]
 

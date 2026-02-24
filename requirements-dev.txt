@@ -196,9 +196,13 @@ pluggy==1.6.0
 psutil==7.2.2
     # via pytest-xprocess
 puremagic==1.30 ; python_full_version < '3.12'
-    # via oda-api
+    # via
+    #   dispatcher-plugin-nb2workflow
+    #   oda-api
 puremagic==2.0.0 ; python_full_version >= '3.12'
-    # via oda-api
+    # via
+    #   dispatcher-plugin-nb2workflow
+    #   oda-api
 pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy' and sys_platform == 'linux'
     # via cffi
 pyerfa==2.0.1.5
@@ -229,8 +233,6 @@ python-dateutil==2.9.0.post0
     #   pandas
 python-logstash==0.4.8
     # via cdci-data-analysis
-python-magic==0.4.27
-    # via dispatcher-plugin-nb2workflow
 pytokens==0.4.1
     # via black
 pytz==2025.2

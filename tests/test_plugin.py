@@ -11,11 +11,9 @@ import jwt
 import pytest
 from oda_api.api import RequestNotUnderstood
 import re
-import gzip
 import os
-from magic import from_buffer as mime_from_buffer
 from conftest import set_backend_status
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
