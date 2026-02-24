@@ -37,7 +37,7 @@ bokeh==3.1.1
     #   oda-api
 bs4==0.0.2
     # via cdci-data-analysis
-cdci-data-analysis @ git+https://github.com/oda-hub/dispatcher-app.git@caec78179e7278da48614b195ec1cd8e3ad2326c
+cdci-data-analysis @ git+https://github.com/oda-hub/dispatcher-app.git@5ac70b681331ac8fe864e1b04ed53fc746b775cb
     # via dispatcher-plugin-nb2workflow
 certifi==2026.1.4
     # via
@@ -168,7 +168,7 @@ numpy==2.4.2 ; python_full_version >= '3.11'
     #   pandas
     #   pyerfa
     #   scipy
-oda-api @ git+https://github.com/oda-hub/oda_api.git@27665448856365023ecfaab72904c9cfe8b2d7af
+oda-api @ git+https://github.com/oda-hub/oda_api.git@bf0b1ec0f843ea12fccba5ba4a20538d6b03e754
     # via cdci-data-analysis
 packaging==26.0
     # via
