@@ -31,12 +31,10 @@ dev = [
     "pytest-xprocess",
     "cdci-data-analysis",
     "coverage>=7.10.7",
-    "oda-api"
 ]
 
 [tool.uv.sources]
 cdci-data-analysis = { git = "https://github.com/oda-hub/dispatcher-app.git", branch = "master", group = "dev" }
-oda-api = { git = "https://github.com/oda-hub/oda_api.git", branch = "puremagic-update-compat", group = "dev" }
 
 [tool.pytest]
 markers = ["fullstack"]

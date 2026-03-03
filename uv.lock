@@ -296,7 +296,7 @@ name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
+    { name = "pycparser", marker = "(python_full_version < '3.11' and implementation_name != 'PyPy' and sys_platform == 'emscripten') or (python_full_version < '3.11' and implementation_name != 'PyPy' and sys_platform == 'win32') or (implementation_name != 'PyPy' and sys_platform != 'emscripten' and sys_platform != 'win32')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/eb/56/b1ba7935a17738ae8453301356628e8147c79dbb825bcbc73dc7401f9846/cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529", size = 523588, upload-time = "2025-09-08T23:24:04.541Z" }
 wheels = [
@@ -747,7 +747,7 @@ name = "cryptography"
 version = "46.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
+    { name = "cffi", marker = "(python_full_version < '3.11' and platform_python_implementation != 'PyPy' and sys_platform == 'emscripten') or (python_full_version < '3.11' and platform_python_implementation != 'PyPy' and sys_platform == 'win32') or (platform_python_implementation != 'PyPy' and sys_platform != 'emscripten' and sys_platform != 'win32')" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/60/04/ee2a9e8542e4fa2773b81771ff8349ff19cdd56b7258a0cc442639052edb/cryptography-46.0.5.tar.gz", hash = "sha256:abace499247268e3757271b2f1e244b36b06f8515cf27c4d49468fc9eb16e93d", size = 750064, upload-time = "2026-02-10T19:18:38.255Z" }
@@ -824,7 +824,6 @@ dependencies = [
 dev = [
     { name = "cdci-data-analysis" },
     { name = "coverage" },
-    { name = "oda-api" },
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-httpserver" },
@@ -842,7 +841,6 @@ requires-dist = [
 dev = [
     { name = "cdci-data-analysis", git = "https://github.com/oda-hub/dispatcher-app.git?branch=master" },
     { name = "coverage", specifier = ">=7.10.7" },
-    { name = "oda-api", git = "https://github.com/oda-hub/oda_api.git?branch=puremagic-update-compat" },
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-httpserver" },
@@ -854,7 +852,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -1699,8 +1697,8 @@ wheels = [
 
 [[package]]
 name = "oda-api"
-version = "1.3.2"
-source = { git = "https://github.com/oda-hub/oda_api.git?branch=puremagic-update-compat#906fffb7a3ca8fdbb98d3b624f1cfbb9ed833335" }
+version = "1.3.3"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy", version = "6.1.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "astropy", version = "7.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1719,6 +1717,10 @@ dependencies = [
     { name = "requests" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/22/b74df81e1d50cb22e3467080131038f1df68b780aed17239c263255ec960/oda_api-1.3.3.tar.gz", hash = "sha256:19e2c03308834b7de1bd7c92b4ffb0c435b8d814a052802093bb8ebca7c93c3e", size = 58421, upload-time = "2026-02-26T13:34:29.662Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/33/59dd1431dfa351d9b99a664524fa3f1dfc88aa0d7d0e771c5815800d7411/oda_api-1.3.3-py3-none-any.whl", hash = "sha256:862af47ad5e522e80fde4e45a5047b545788ca8bc067c4116831939b669d4227", size = 59726, upload-time = "2026-02-26T13:34:28.385Z" },
 ]
 
 [[package]]
@@ -2525,8 +2527,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography" },
-    { name = "jeepney" },
+    { name = "cryptography", marker = "(python_full_version < '3.11' and sys_platform == 'emscripten') or (python_full_version < '3.11' and sys_platform == 'win32') or (sys_platform != 'emscripten' and sys_platform != 'win32')" },
+    { name = "jeepney", marker = "(python_full_version < '3.11' and sys_platform == 'emscripten') or (python_full_version < '3.11' and sys_platform == 'win32') or (sys_platform != 'emscripten' and sys_platform != 'win32')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [

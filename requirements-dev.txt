@@ -168,7 +168,7 @@ numpy==2.4.2 ; python_full_version >= '3.11'
     #   pandas
     #   pyerfa
     #   scipy
-oda-api @ git+https://github.com/oda-hub/oda_api.git@906fffb7a3ca8fdbb98d3b624f1cfbb9ed833335
+oda-api==1.3.3
     # via cdci-data-analysis
 packaging==26.0
     # via
