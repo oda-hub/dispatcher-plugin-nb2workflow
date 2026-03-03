@@ -12,5 +12,3 @@ dependencies = [
     "oda-api"
 ]
 
-[tool.uv.sources]
-oda-api = { git = "https://github.com/oda-hub/oda_api.git", branch = "puremagic-update-compat"}

@@ -15,7 +15,7 @@ astropy==7.2.0 ; python_full_version >= '3.11'
     #   cdci-data-analysis
     #   oda-api
     #   pyvo
-astropy-iers-data==0.2026.2.23.0.48.33
+astropy-iers-data==0.2026.3.2.0.47.4
     # via astropy
 astroquery==0.4.11
     # via oda-api
@@ -39,7 +39,7 @@ bs4==0.0.2
     # via cdci-data-analysis
 cdci-data-analysis @ git+https://github.com/oda-hub/dispatcher-app.git@5ac70b681331ac8fe864e1b04ed53fc746b775cb
     # via dispatcher-plugin-nb2workflow
-certifi==2026.1.4
+certifi==2026.2.25
     # via
     #   requests
     #   sentry-sdk
@@ -168,7 +168,7 @@ numpy==2.4.2 ; python_full_version >= '3.11'
     #   pandas
     #   pyerfa
     #   scipy
-oda-api @ git+https://github.com/oda-hub/oda_api.git@bf0b1ec0f843ea12fccba5ba4a20538d6b03e754
+oda-api @ git+https://github.com/oda-hub/oda_api.git@906fffb7a3ca8fdbb98d3b624f1cfbb9ed833335
     # via cdci-data-analysis
 packaging==26.0
     # via
@@ -235,7 +235,7 @@ python-logstash==0.4.8
     # via cdci-data-analysis
 pytokens==0.4.1
     # via black
-pytz==2025.2
+pytz==2026.1.post1
     # via
     #   flask-restx
     #   pandas
@@ -263,7 +263,7 @@ scipy==1.17.1 ; python_full_version >= '3.11'
     # via oda-api
 secretstorage==3.5.0 ; sys_platform == 'linux'
     # via keyring
-sentry-sdk==2.53.0
+sentry-sdk==2.54.0
     # via cdci-data-analysis
 six==1.17.0
     # via
