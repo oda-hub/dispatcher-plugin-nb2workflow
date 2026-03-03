@@ -13,8 +13,8 @@ from .util import AstropyTableViewParser, with_hashable_dict
 from oda_api.ontology_helper import Ontology
 from io import StringIO
 from functools import lru_cache  
-from mimetypes import guess_extension
-from magic import from_buffer as mime_from_buffer
+import mimetypes
+import puremagic
 
 logger = logging.getLogger(__name__)
 
@@ -237,11 +237,11 @@ class NB2WBinaryProduct(NB2WProduct):
         self.name = name
         self.extra_metadata = extra_metadata
         self.data_prod = BinaryProduct.decode(encoded_data)
-        self.mime_type = mime_from_buffer(self.data_prod.bin_data, mime=True)
+        self.extension = puremagic.from_string(self.data_prod.bin_data)
+        self.mime_type = mimetypes.types_map.get(self.extension)
     
     def write(self):
-        ext = guess_extension(self.mime_type, strict=False)
-        if ext is None: ext = ''
+        ext = '' if self.extension is None else self.extension
         file_path = os.path.join(self.out_dir, f"{self.name}{ext}")
         self.data_prod.write_file(file_path)
         self.file_path = file_path
