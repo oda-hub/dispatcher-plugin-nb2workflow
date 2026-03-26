@@ -252,7 +252,7 @@ rdflib==7.6.0
     # via
     #   dispatcher-plugin-nb2workflow
     #   oda-api
-requests==2.32.5
+requests==2.33.0
     # via
     #   astroquery
     #   oda-api
