@@ -23,3 +23,29 @@
     oda:deployment_namespace "oda-staging" ;
     oda:service_name "kgprod" ;
     sdo:creativeWorkStatus "production" .
+
+# New schema records for testing (async bot schema)
+<https://path.to/new-full.git> a oda:WorkflowService ;
+    oda:deployment_name "newfull-workflow-backend" ;
+    oda:service_endpoint "http://newfull.example.com:8000" ;
+    oda:project_title "New Full Example" ;
+    oda:project_slug "newfull" ;
+    sdo:creativeWorkStatus "production" .
+
+<https://path.to/new-no-title.git> a oda:WorkflowService ;
+    oda:deployment_name "newnotitle-workflow-backend" ;
+    oda:service_endpoint "http://newnotitle.example.com:8000" ;
+    oda:project_slug "newnotitle" ;
+    sdo:creativeWorkStatus "development" .
+
+<https://path.to/new-no-slug.git> a oda:WorkflowService ;
+    oda:deployment_name "newnoslug-workflow-backend" ;
+    oda:service_endpoint "http://newnoslug.example.com:8000" ;
+    oda:project_title "New No Slug Example" ;
+    sdo:creativeWorkStatus "development" .
+
+<https://path.to/new-no-status.git> a oda:WorkflowService ;
+    oda:deployment_name "newnostatus-workflow-backend" ;
+    oda:service_endpoint "http://newnostatus.example.com:8000" ;
+    oda:project_title "New No Status Example" ;
+    oda:project_slug "newnostatus" .
