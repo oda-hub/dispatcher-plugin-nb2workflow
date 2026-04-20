@@ -114,12 +114,16 @@ def get_config_dict_from_kg(kg_conf_dict=static_config_dict['kg']):
     # with new async bot, we change schema, the fields meaning is more explicit. We can distinguish by service_name vs service_endpoint
     for r in kg_select('''
                 ?repo_url a <http://odahub.io/ontology#WorkflowService>;
-                            <http://odahub.io/ontology#deployment_name> ?deployment_name;
-                            <http://odahub.io/ontology#service_endpoint> ?service_endpoint .
+                        <http://odahub.io/ontology#deployment_name> ?deployment_name;
+                        <http://odahub.io/ontology#service_endpoint> ?service_endpoint .
                 OPTIONAL {
-                    ?repo_url <http://odahub.io/ontology#project_title> ?project_title;
-                              <http://odahub.io/ontology#project_slug> ?project_slug;
-                              <https://schema.org/creativeWorkStatus> ?work_status .
+                    ?repo_url <http://odahub.io/ontology#project_title> ?project_title .
+                }
+                OPTIONAL {
+                    ?repo_url <http://odahub.io/ontology#project_slug> ?project_slug .
+                }
+                OPTIONAL {
+                    ?repo_url <https://schema.org/creativeWorkStatus> ?work_status .
                 }
             ''', kg_conf_dict):
 
