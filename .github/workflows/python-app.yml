@@ -45,7 +45,7 @@ jobs:
         uv run mypy dispatcher_plugin_nb2workflow --ignore-missing-imports || echo 'this is fine too!'
     - name: Test with pytest
       run: |
-        curl -o $ODA_ONTOLOGY_PATH https://raw.githubusercontent.com/oda-hub/ontology/ecdf2a61f87aac13ae7a96c0f3dad960312adae4/ontology.ttl
+        curl -o $ODA_ONTOLOGY_PATH https://raw.githubusercontent.com/oda-hub/ontology/66c2c5fc9e5e0098bff49c164102dd4a131f9750/ontology.ttl
         uv run python -m coverage run --source=dispatcher_plugin_nb2workflow -m pytest tests -m "not fullstack" -sv --full-trace --log-cli-level=DEBUG 
     - name: Test full stack
       run: |
