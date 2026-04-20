@@ -413,6 +413,7 @@ def test_new_kg_schema_coexists_with_old():
     # New schema: service_endpoint directly
     assert new_instr['data_server_url'] == 'http://newfull.example.com:8000'
 
+
 def test_external_service_kg(conf_file, dispatcher_live_fixture):
     with open(conf_file, 'r') as fd:
         conf_bk = fd.read()
@@ -427,7 +428,11 @@ def test_external_service_kg(conf_file, dispatcher_live_fixture):
     
         server = dispatcher_live_fixture
         logger.info("constructed server: %s", server)
-        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        try:
+            c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        except TimeoutError:
+            pytest.xfail('Connection timeout to production MMODA KG, skipping test')
+
         assert c.status_code == 200 
             
         c = requests.get(server + "/instr-list",
