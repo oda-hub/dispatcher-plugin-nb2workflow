@@ -102,7 +102,7 @@ def get_config_dict_from_kg(kg_conf_dict=static_config_dict['kg']):
                 }
             ''', kg_conf_dict):
 
-        logger.info('found instrument service record %s', r)
+        logger.info('found instrument service record (old schema) %s', r)
         cfg_dict['instruments'][r['service_name']['value']] = {
             "data_server_url": f"http://{r['deployment_name']['value']}:8000",
             "dummy_cache": "",
@@ -111,6 +111,36 @@ def get_config_dict_from_kg(kg_conf_dict=static_config_dict['kg']):
             "restricted_access": False if r.get('work_status', {'value': 'undefined'})['value'] == "production" else True
         }
     
+    # with new async bot, we change schema, the fields meaning is more explicit. We can distinguish by service_name vs service_endpoint
+    for r in kg_select('''
+                ?repo_url a <http://odahub.io/ontology#WorkflowService>;
+                            <http://odahub.io/ontology#deployment_name> ?deployment_name;
+                            <http://odahub.io/ontology#service_endpoint> ?service_endpoint .
+                OPTIONAL {
+                    ?repo_url <http://odahub.io/ontology#project_title> ?project_title;
+                              <http://odahub.io/ontology#project_slug> ?project_slug;
+                              <https://schema.org/creativeWorkStatus> ?work_status .
+                }
+            ''', kg_conf_dict):
+
+        logger.info('found instrument service record (new schema): %s', r)
+        project_title = r.get('project_title', {'value': 'undefined'})['value']
+        project_slug = r.get('project_slug', {'value': 'undefined'})['value']
+        creativeWorkStatus = r.get('work_status', {'value': 'undefined'})['value']
+        deployment_name = r['deployment_name']['value']
+        service_endpoint = r['service_endpoint']['value']
+
+        instrument_name = project_slug if project_slug != 'undefined' else deployment_name
+        
+        cfg_dict['instruments'][instrument_name] = {
+            "data_server_url": service_endpoint,
+            "dummy_cache": "",
+            "creativeWorkStatus": creativeWorkStatus, 
+                # creativeWorkStatus isn't currently used further in plugin but may be used in the future. Useful in test, though.
+            "restricted_access": False if creativeWorkStatus == "production" else True,
+            "friendly_name": project_title  # TODO: propagate to frontend
+        }
+
     return cfg_dict
 
 combined_instrument_dict = {}
