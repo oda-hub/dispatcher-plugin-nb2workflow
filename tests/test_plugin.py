@@ -321,6 +321,99 @@ def test_get_config_dict_from_kg():
     assert cdict['instruments']['kgunlab']['creativeWorkStatus'] == 'undefined'
     assert cdict['instruments']['kgprod']['creativeWorkStatus'] == 'production'
 
+
+def test_new_kg_schema_full_record():
+    """Test new schema record with all optional fields present"""
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    # Check new schema instrument with all fields
+    assert 'newfull' in cdict['instruments']
+    instr = cdict['instruments']['newfull']
+    assert instr['data_server_url'] == 'http://newfull.example.com:8000'
+    assert instr['creativeWorkStatus'] == 'production'
+    assert not instr['restricted_access']  # production -> False
+    assert instr['friendly_name'] == 'New Full Example'
+
+
+def test_new_kg_schema_missing_title():
+    """Test new schema record missing project_title"""
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    # Check new schema instrument missing title - should use project_slug for name
+    assert 'newnotitle' in cdict['instruments']
+    instr = cdict['instruments']['newnotitle']
+    assert instr['data_server_url'] == 'http://newnotitle.example.com:8000'
+    assert instr['creativeWorkStatus'] == 'development'
+    assert instr['restricted_access']  # development -> True
+    assert instr['friendly_name'] == 'undefined'  # fallback when missing
+
+
+def test_new_kg_schema_missing_slug():
+    """Test new schema record missing project_slug (fallback to deployment_name)"""
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    # Check new schema instrument missing slug - should use deployment_name
+    assert 'newnoslug-workflow-backend' in cdict['instruments']
+    instr = cdict['instruments']['newnoslug-workflow-backend']
+    assert instr['data_server_url'] == 'http://newnoslug.example.com:8000'
+    assert instr['creativeWorkStatus'] == 'development'
+    assert instr['restricted_access']
+    assert instr['friendly_name'] == 'New No Slug Example'
+
+
+def test_new_kg_schema_missing_status():
+    """Test new schema record missing creativeWorkStatus"""
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    # Check new schema instrument missing status - should use project_slug for name
+    assert 'newnostatus' in cdict['instruments']
+    instr = cdict['instruments']['newnostatus']
+    assert instr['data_server_url'] == 'http://newnostatus.example.com:8000'
+    assert instr['creativeWorkStatus'] == 'undefined'  # fallback
+    assert instr['restricted_access']  # undefined -> True
+    assert instr['friendly_name'] == 'New No Status Example'
+
+
+def test_new_kg_schema_coexists_with_old():
+    """Test that new schema and old schema records coexist"""
+    from dispatcher_plugin_nb2workflow.exposer import get_config_dict_from_kg
+    
+    cdict = get_config_dict_from_kg({"type": "file",
+                                     "path": "tests/example-kg.ttl"})
+    
+    # Check old schema instruments still present
+    assert 'kgexample' in cdict['instruments']
+    assert 'kgunlab' in cdict['instruments']
+    assert 'kgprod' in cdict['instruments']
+    
+    # Check new schema instruments present
+    assert 'newfull' in cdict['instruments']
+    assert 'newnotitle' in cdict['instruments']
+    assert 'newnoslug-workflow-backend' in cdict['instruments']
+    assert 'newnostatus' in cdict['instruments']
+    
+    # Verify they have different data_server_url patterns
+    old_instr = cdict['instruments']['kgexample']
+    new_instr = cdict['instruments']['newfull']
+    
+    # Old schema: http://{deployment_name}:8000
+    assert old_instr['data_server_url'] == 'http://kgexample-workflow-backend:8000'
+    # New schema: service_endpoint directly
+    assert new_instr['data_server_url'] == 'http://newfull.example.com:8000'
+
+
 def test_external_service_kg(conf_file, dispatcher_live_fixture):
     with open(conf_file, 'r') as fd:
         conf_bk = fd.read()
@@ -335,7 +428,11 @@ def test_external_service_kg(conf_file, dispatcher_live_fixture):
     
         server = dispatcher_live_fixture
         logger.info("constructed server: %s", server)
-        c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        try:
+            c = requests.get(server + "/reload-plugin/dispatcher_plugin_nb2workflow")
+        except TimeoutError:
+            pytest.xfail('Connection timeout to production MMODA KG, skipping test')
+
         assert c.status_code == 200 
             
         c = requests.get(server + "/instr-list",
