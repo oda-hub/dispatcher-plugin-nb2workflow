@@ -67,7 +67,7 @@ contourpy==1.3.3 ; python_full_version >= '3.11'
     #   bokeh
     #   matplotlib
 coverage==7.13.4
-cryptography==46.0.5 ; sys_platform == 'linux'
+cryptography==46.0.6 ; sys_platform == 'linux'
     # via secretstorage
 cycler==0.12.1
     # via matplotlib
