@@ -10,7 +10,8 @@ import logging
 logger = logging.getLogger()
 
 class NB2WDataDispatcher:
-    def __init__(self, instrument=None, param_dict=None, task=None, config=None):
+    def __init__(self, instrument=None, param_dict=None, task=None, config=None,
+                 return_progress_notebook=False):
         iname = instrument if isinstance(instrument, str) else instrument.name
         if config is None:
             config = DataServerConf.from_conf_dict(
@@ -19,6 +20,7 @@ class NB2WDataDispatcher:
             )
 
         self.include_glued_output = exposer.static_config_dict.get('include_glued_output', True)
+        self.return_progress_notebook = return_progress_notebook
         self.data_server_url = config.data_server_url
         self.task = task
         self.param_dict = param_dict
@@ -147,11 +149,14 @@ class NB2WDataDispatcher:
                     jobdir = jobdir.split('/')[-1]
                     trace_url = os.path.join(self.data_server_url, 'trace', jobdir, task.strip('/'))
                     query_string = {'include_glued_output': False} if not self.include_glued_output else {}
+                    if self.return_progress_notebook:
+                        query_string['include_raw_notebook'] = True
                     res_trace = requests.get(trace_url, params=query_string)
                     if res_trace.status_code in [200, 201]:
                         res_trace_dict = {
                             'res': res_trace,
-                            'progress_product': True
+                            'progress_product': True,
+                            'include_raw_notebook': self.return_progress_notebook,
                         }
                         workflow_status = 'progress' if workflow_status == 'started' else workflow_status
                         query_out.set_status(0, job_status=workflow_status)
