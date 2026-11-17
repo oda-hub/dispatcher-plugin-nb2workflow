@@ -17,6 +17,7 @@ import pytest
 import json
 import os
 import signal
+import base64
 from xprocess import ProcessStarter
 import requests
 from urllib.parse import urlparse, parse_qs
@@ -44,6 +45,7 @@ instruments:
 
 backend_status_fn = "Backend-status.state"
 trace_backend_status_fn = "Trace-Backend-status.state"
+test_notebook_content = b'{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
 
 
 def set_backend_status(value):
@@ -99,6 +101,11 @@ def trace_get_func_handler(request: Request):
     with open(os.path.join(responses_path, output_html_file), 'r') as fd:
         test_output_content = fd.read()
 
+    if parsed_request_query.get('include_raw_notebook') == ['True']:
+        return Response(json.dumps({
+            'html': test_output_content,
+            'output_notebook_content': base64.b64encode(test_notebook_content).decode(),
+        }), status=200, content_type='application/json')
     return Response(test_output_content, status=200)
 
 def return_request_query_dict(request: Request):

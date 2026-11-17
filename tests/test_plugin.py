@@ -780,6 +780,104 @@ def test_api_return_progress(dispatcher_live_fixture, mock_backend, api):
         assert jdata['products']['progress_product_html_output'][0] == test_output_html
 
 
+@pytest.mark.parametrize("api", [True, False])
+@pytest.mark.parametrize("run_asynch", [True, False])
+def test_return_progress_with_notebook(dispatcher_live_fixture, mock_backend, api, run_asynch):
+    import base64
+    from conftest import test_notebook_content
+
+    set_backend_status('')
+    params = {'instrument': 'example0',
+              'query_status': 'new',
+              'query_type': 'Real',
+              'product_type': 'lightcurve',
+              'run_asynch': run_asynch,
+              'return_progress': True}
+    if api:
+        params['api'] = True
+    url = os.path.join(dispatcher_live_fixture, 'run_analysis')
+    plain = requests.get(url, params=params).json()
+    result = requests.get(url, params={**params, 'return_progress_notebook': True}).json()
+
+    assert result['job_status'] != 'failed', result
+    assert result['products']['job_id'] == plain['products']['job_id']
+    if api:
+        progress = result['products']['progress_product_list'][0]
+        assert progress['value'] == plain['products']['progress_product_list'][0]['value']
+        encoded = progress['output_notebook_content']
+        assert 'output_notebook_content' not in plain['products']['progress_product_list'][0]
+    else:
+        assert result['products']['progress_product_html_output'] == plain['products']['progress_product_html_output']
+        encoded = result['products']['progress_product_notebook_content'][0]
+        assert 'progress_product_notebook_content' not in plain['products']
+    assert base64.b64decode(encoded) == test_notebook_content
+
+
+def test_requested_notebook_rejects_old_trace_response():
+    from requests import Response
+    from dispatcher_plugin_nb2workflow.queries import NB2WProductQuery
+
+    response = Response()
+    response.headers['content-type'] = 'text/html'
+    response._content = b'<html>old backend</html>'
+    query = object.__new__(NB2WProductQuery)
+    with pytest.raises(ValueError, match='did not return the requested raw notebook'):
+        query.build_product_list(None, {'res': response, 'progress_product': True,
+                                        'include_raw_notebook': True}, None)
+
+
+@pytest.mark.parametrize(('value', 'expected'), [('True', True), ('False', False)])
+def test_notebook_option_is_not_a_notebook_input(monkeypatch, value, expected):
+    from cdci_data_analysis.analysis.instrument import Instrument
+    from dispatcher_plugin_nb2workflow.exposer import NB2WInstrument
+
+    monkeypatch.setattr(Instrument, 'set_pars_from_dic', lambda self, args, verbose=False: args)
+    instrument = object.__new__(NB2WInstrument)
+    args = {'return_progress_notebook': value, 'input': 1}
+    assert instrument.set_pars_from_dic(args) == {'input': 1}
+    assert instrument.return_progress_notebook is expected
+    assert args['return_progress_notebook'] == value
+
+
+def test_notebook_option_does_not_override_existing_notebook_input(monkeypatch):
+    from types import SimpleNamespace
+    from cdci_data_analysis.analysis.instrument import Instrument
+    from dispatcher_plugin_nb2workflow.exposer import NB2WInstrument
+
+    monkeypatch.setattr(Instrument, 'set_pars_from_dic', lambda self, args, verbose=False: args)
+    instrument = object.__new__(NB2WInstrument)
+    instrument.get_product_query_name = lambda product: product
+    instrument.get_query_by_name = lambda name: SimpleNamespace(backend_param_dict={'return_progress_notebook': {}})
+    args = {'product_type': 'workflow', 'return_progress_notebook': 'input value'}
+    assert instrument.set_pars_from_dic(args) == args
+    assert instrument.return_progress_notebook is False
+
+
+def test_notebook_trace_params_for_running_job(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from dispatcher_plugin_nb2workflow import exposer
+    from dispatcher_plugin_nb2workflow.dataserver_dispatcher import NB2WDataDispatcher
+
+    monkeypatch.setitem(exposer.static_config_dict, 'include_glued_output', False)
+    backend_response = Mock(status_code=201)
+    backend_response.json.return_value = {'workflow_status': 'started', 'jobdir': '/tmp/job'}
+    trace_response = Mock(status_code=200)
+    get = Mock(side_effect=[backend_response, trace_response])
+    monkeypatch.setattr(requests, 'get', get)
+    dispatcher = NB2WDataDispatcher(instrument='example', config=SimpleNamespace(data_server_url='http://backend'),
+                                   task='workflow', param_dict={'input': 1}, return_progress_notebook=True)
+
+    result, status = dispatcher.get_progress_run(run_asynch=True)
+
+    assert get.call_args_list[0].kwargs['params'] == {'input': 1}
+    assert get.call_args_list[1].kwargs['params'] == {
+        'include_glued_output': False, 'include_raw_notebook': True
+    }
+    assert result['res'] is trace_response
+    assert status.status_dictionary['job_status'] == 'progress'
+
+
 @pytest.mark.fullstack
 def test_structured_param(live_nb2service,
                           conf_file, 

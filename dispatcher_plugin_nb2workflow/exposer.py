@@ -1,5 +1,6 @@
 from cdci_data_analysis.analysis.instrument import Instrument
 from cdci_data_analysis.analysis.queries import SourceQuery, InstrumentQuery
+from cdci_data_analysis.analysis.parameters import Boolean
 from .queries import NB2WProductQuery, NB2WInstrumentQuery, NB2WSourceQuery
 from .dataserver_dispatcher import NB2WDataDispatcher
 from . import conf_file
@@ -121,13 +122,27 @@ def build_combined_instrument_dict():
 
 build_combined_instrument_dict()
 
+class NB2WInstrument(Instrument):
+    def set_pars_from_dic(self, arg_dic, verbose=False):
+        args = arg_dic.copy()
+        self.return_progress_notebook = False
+        product_type = args.get('product_type')
+        query = self.get_query_by_name(self.get_product_query_name(product_type)) if product_type else None
+        if query is None or 'return_progress_notebook' not in query.backend_param_dict:
+            self.return_progress_notebook = Boolean(
+                value=args.pop('return_progress_notebook', False),
+                name='return_progress_notebook',
+            ).value
+        return super().set_pars_from_dic(args, verbose=verbose)
+
+
 def factory_factory(instr_name, restricted_access):
     instrument_query = NB2WInstrumentQuery('instr_query', restricted_access)
     def instr_factory():
         backend_options = NB2WDataDispatcher(instrument=instr_name).backend_options
         query_list, query_dict = NB2WProductQuery.query_list_and_dict_factory(backend_options, 
                                                                               ontology_path)
-        return Instrument(instr_name,
+        return NB2WInstrument(instr_name,
                         src_query = NB2WSourceQuery.from_backend_options(backend_options, 
                                                                          ontology_path),
                         instrumet_query = instrument_query,

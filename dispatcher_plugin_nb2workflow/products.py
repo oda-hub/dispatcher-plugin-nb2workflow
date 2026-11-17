@@ -271,10 +271,11 @@ class NB2WTextProduct(NB2WProduct):
 
 
 class NB2WProgressProduct(NB2WProduct):
-    def __init__(self, progress_html_data, out_dir=None, name='progress'):
+    def __init__(self, progress_html_data, out_dir=None, name='progress', notebook_content=None):
         self.out_dir = out_dir
         self.name = name
         self.progress_data = progress_html_data
+        self.notebook_content = notebook_content
 
 
 class NB2WPictureProduct(NB2WProduct): 
