@@ -132,7 +132,8 @@ class NB2WProductQuery(ProductQuery):
         return instrument.data_server_query_class(instrument=instrument,
                                                 config=config,
                                                 param_dict=param_dict,
-                                                task=self.backend_product_name)
+                                                task=self.backend_product_name,
+                                                return_progress_notebook=getattr(instrument, 'return_progress_notebook', False))
 
     def build_product_list(self, instrument, res, out_dir, api=False):
         prod_list = []
@@ -140,6 +141,7 @@ class NB2WProductQuery(ProductQuery):
         if out_dir is None:
             out_dir = './'
         res_progress_product = False
+        include_raw_notebook = False
         # In the case of a dispatcher request where the progress of the execution has been requested
         # (`return_progress: True`), the get_progress_run wraps the response from the nb2service within a dict,
         # so that it is easier here to understand how to treat the response, and build the correct product list.
@@ -147,21 +149,28 @@ class NB2WProductQuery(ProductQuery):
         # json format.
         if isinstance(res, dict):
             res_progress_product = res.get('progress_product', False)
+            include_raw_notebook = res.get('include_raw_notebook', False)
             res = res.get('res', None)
         if res is not None:
             res_content_type = res.headers.get('content-type', None)
-            if res_content_type is not None and res_content_type == 'application/json':
+            if res_progress_product:
+                if include_raw_notebook:
+                    if not res_content_type or res_content_type.split(';', 1)[0].strip().lower() != 'application/json':
+                        raise ValueError('Backend trace did not return the requested raw notebook')
+                    trace = res.json()
+                    if not isinstance(trace.get('html'), str) or not isinstance(trace.get('output_notebook_content'), str):
+                        raise ValueError('Backend trace response is missing HTML or raw notebook content')
+                    prod_list.append(NB2WProgressProduct(trace['html'], out_dir,
+                                                        notebook_content=trace['output_notebook_content']))
+                else:
+                    prod_list.append(NB2WProgressProduct(res.content.decode(), out_dir))
+            elif res_content_type is not None and res_content_type == 'application/json':
                 if 'output' in res.json().keys(): # in synchronous mode
                     _o_dict = res.json()
                 else:
                     _o_dict = res.json()['data']
                 _output = _o_dict['output']
                 prod_list = NB2WProduct.prod_list_factory(self.backend_output_dict, _output, out_dir, self.ontology_path)
-            else:
-                _o_text = res.content.decode()
-                if res_progress_product:
-                    prod_list.append(NB2WProgressProduct(_o_text, out_dir))
-
         return prod_list
 
     def process_product_method(self, instrument, prod_list, api=False):
@@ -186,8 +195,10 @@ class NB2WProductQuery(ProductQuery):
                                          'value': product.parameter_obj.value,
                                          'meta_data': {'uri': product.type_key}})
                 elif isinstance(product, NB2WProgressProduct):
-                    progress_dp_list.append({'name': product.name,
-                                             'value': product.progress_data})
+                    progress_item = {'name': product.name, 'value': product.progress_data}
+                    if product.notebook_content is not None:
+                        progress_item['output_notebook_content'] = product.notebook_content
+                    progress_dp_list.append(progress_item)
                 else:
                     np_dp_list.append(product.dispatcher_data_prod.data)
                 
@@ -235,6 +246,10 @@ class NB2WProductQuery(ProductQuery):
             
             if len(prod_list.prod_list) == 1 and isinstance(prod_list.prod_list[0], NB2WProgressProduct):
                 query_out.prod_dictionary['progress_product_html_output'] = progress_product_list
+                if prod_list.prod_list[0].notebook_content is not None:
+                    query_out.prod_dictionary['progress_product_notebook_content'] = [
+                        prod_list.prod_list[0].notebook_content
+                    ]
             else:
                 if len(file_name_list) == 1:
                     query_out.prod_dictionary['download_file_name'] = f'{file_name_list[0]}.gz'
